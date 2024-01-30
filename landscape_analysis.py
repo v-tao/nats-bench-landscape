@@ -5,14 +5,15 @@ import util
 import metrics
 
 FITNESS_DATA = pd.read_csv("nats_bench.csv")
-IMAGE_DATASETS = ["Cifar10", "Cifar100", "ImageNet16"]
-EPOCHS = [12, 200]
-# IMAGE_DATASETS=["Cifar10"]
-# EPOCHS=[12]
+# IMAGE_DATASETS = ["Cifar10", "Cifar100", "ImageNet16"]
+# EPOCHS = [12, 200]
+IMAGE_DATASETS=["Cifar10"]
+EPOCHS=[12]
 
 data = []
 for image_dataset in IMAGE_DATASETS:
     for epoch in EPOCHS:
+        # print(metrics.neutrality(FITNESS_DATA, image_dataset, epoch))
         FDC = metrics.FDC(FITNESS_DATA, image_dataset, epoch)
         num_local_maxima = metrics.num_local_maxima(FITNESS_DATA, image_dataset, epoch)
         modality = num_local_maxima/len(FITNESS_DATA)
@@ -26,4 +27,4 @@ for image_dataset in IMAGE_DATASETS:
         data.append(row)
 
 df = pd.DataFrame(data)
-print(df)
+df.to_csv("fla_test.csv", index=False)

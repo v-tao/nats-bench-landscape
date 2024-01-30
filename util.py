@@ -124,7 +124,7 @@ def edit_distance(arch1_str, arch2_str):
       edit_distance += 1
   return edit_distance
 
-def nbrs(arch_str):
+def nbr_strings(arch_str):
     """
     ===========
     nbrs
@@ -154,3 +154,9 @@ def nbrs(arch_str):
                     nbr[i][j][0] = edge
                     nbrs.add(lists2str(nbr))
     return nbrs
+
+def nbrs(df, arch_i):
+  # returns rows of neighbors of arch_i
+  arch = df.loc[arch_i]
+  nbr_strs = nbr_strings(arch["ArchitectureString"])
+  return df[df["ArchitectureString"].isin(nbr_strs)]
