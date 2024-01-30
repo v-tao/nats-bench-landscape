@@ -19,48 +19,32 @@ def dists_to_arch(df, arch):
         dists[i] = util.edit_distance(df.loc[i]["ArchitectureString"], arch)
     return dists
 
-# def bfs(start, visited, neutral_net):
-#     q = deque([start])
-#     visited.add(start)
-#     neutral_area.add(start)
-
-#     while q:
-#         current_arch = q.popleft()
-#         nbr = util.nbrs()
-#         for nbr in 
-
-def neutrality(df, image_dataset, epochs):
+def bfs(df, image_dataset, epochs, start_idx, visited, neutral_net):
     fit_header = format_name(image_dataset, epochs)
-    neutral_nets = []
-    visited = set()
-    curr_arch = df.loc[i]
-    curr_fit = curr_arch[fit_header]
-    q = deque([0])
+    q = deque([start_idx])
+    visited.add(start_idx)
+    neutral_net.add(start_idx)
 
     while q:
-        arch_i = q.popleft()
-        if arch_i not in visited:
-            visited.add(arch)
-            nbrs = util.nbrs(curr_arch["ArchitectureString"])
-            nbrs_i = nbrs.index.tolist()
-            q.extend(nbr for nbr in nbrs_i)
+        curr_arch_idx = q.popleft()
+        curr_fit = df.at[curr_arch_idx, fit_header]
+        nbrs = util.nbrs(df, curr_arch_idx)
+        for nbr_idx in nbrs.index:
+            if nbr_idx not in visited and df.at[nbr_idx, fit_header] == curr_fit:
+                visited.add(nbr_idx)
+                neutral_net.add(nbr_idx)
+                q.append(nbr_idx)
 
-    # for i in tqdm(range(len(df))):
-    #     neutral_net = [i]
-    #     curr_arch = df.loc[i]
-    #     curr_fit = curr_arch[fit_header]
-    #     nbrs = util.nbrs(curr_arch["ArchitectureString"])
-    #     # check if any neighbors have the same fitness
-    #     for nbr_str in nbrs:
-    #         nbr = df[df["ArchitectureString"] == nbr_str]
-    #         nbr_fit = nbr[fit_header].values
-    #         # if the neighbr has the same fitness, add to neutral network
-    #         if nbr_fit == curr_fit:
-    #             neutral_net.append(nbr.index[0])
-    #     # if the neutral network contains more than the original architecture, it is a neutral network
-    #     if len(neutral_net) > 1:
-    #         neutral_nets.add(tuple(neutral_net))
-    # return neutral_nets
+def neutral_nets(df, image_dataset, epochs):
+    visited = set()
+    nets = []
+    for i in tqdm(range(len(df))):
+        if i not in visited:
+            net = set()
+            bfs(df, image_dataset, epochs, i, visited, net)
+            if len(net) > 1:
+                nets.append(net)
+    return nets
 
 
 def FDC(df, image_dataset, epochs):
