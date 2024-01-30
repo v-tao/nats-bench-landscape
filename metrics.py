@@ -3,13 +3,9 @@ import util
 from tqdm import tqdm
 from collections import deque
 
-def format_name(image_dataset, epochs):
-    # gets the column name for the corresponding image dataset and number of epochs
-    return f"{image_dataset}TestAccuracy{epochs}Epochs"
-
-def global_max(df, image_dataset, epochs):
-    # gets the fittest architecture for a given image dataset and number of epochs trained
-    global_max_i = df[f"{image_dataset}TestAccuracy{epochs}Epochs"].idxmax()
+def global_max(df, fit_header):
+    # gets the fittest architecture for a given fitness metric
+    global_max_i = df[fit_header].idxmax()
     return df.loc[global_max_i]
 
 def dists_to_arch(df, arch):
@@ -19,8 +15,22 @@ def dists_to_arch(df, arch):
         dists[i] = util.edit_distance(df.loc[i]["ArchitectureString"], arch)
     return dists
 
-def bfs(df, image_dataset, epochs, start_idx, visited, neutral_net):
-    fit_header = format_name(image_dataset, epochs)
+def FDC(df, fit_header):
+    opt = global_max(df, fit_header)
+    fits = df[fit_header].values
+    dists = dists_to_arch(df, opt["ArchitectureString"])
+
+    # covariance between fitnesses and distances
+    cov_fd = np.cov(fits, dists)[0, 1]
+
+    # variances of fitness and distances
+    var_f = np.var(fits)
+    var_d = np.var(dists)
+
+    # Fitness Distance Correlation
+    return (cov_fd) / np.sqrt(var_f * var_d)
+
+def bfs(df, fit_header, start_idx, visited, neutral_net):
     q = deque([start_idx])
     visited.add(start_idx)
     neutral_net.add(start_idx)
@@ -35,36 +45,18 @@ def bfs(df, image_dataset, epochs, start_idx, visited, neutral_net):
                 neutral_net.add(nbr_idx)
                 q.append(nbr_idx)
 
-def neutral_nets(df, image_dataset, epochs):
+def neutral_nets(df, fit_header):
     visited = set()
     nets = []
     for i in tqdm(range(len(df))):
         if i not in visited:
             net = set()
-            bfs(df, image_dataset, epochs, i, visited, net)
+            bfs(df, image_dataset, fit_header, visited, net)
             if len(net) > 1:
                 nets.append(net)
-    return nets
+    return nets    
 
-
-def FDC(df, image_dataset, epochs):
-    fit_header = format_name(image_dataset, epochs)
-    opt = global_max(df, image_dataset, epochs)
-    fits = df[fit_header].values
-    dists = dists_to_arch(df, opt["ArchitectureString"])
-
-    # covariacne between fitnesses and distances
-    cov_fd = np.cov(fits, dists)[0, 1]
-
-    # variances of fitness and distances
-    var_f = np.var(fits)
-    var_d = np.var(dists)
-
-    # Fitness Distance Correlation
-    return (cov_fd) / np.sqrt(var_f * var_d)
-
-def num_local_maxima(df, image_dataset, epochs):
-    fit_header = format_name(image_dataset, epochs)
+def num_local_maxima(df, fit_header):
     fits = df[fit_header].values
     count = 0
     # iterate through all architectures
