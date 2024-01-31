@@ -2,6 +2,7 @@ import numpy as np
 import util
 from tqdm import tqdm
 from collections import deque
+import random
 
 def global_max(df, fit_header):
     # gets the fittest architecture for a given fitness metric
@@ -108,3 +109,15 @@ def num_local_maxima(df, fit_header):
         if local_max:
             count += 1
     return count
+
+def random_walk(df, fit_header, start_i, walk_len):
+    # start a random walk at the given starting architecture for the given walk length
+    curr_arch_i = start_i
+    walk = [curr_arch_i]
+    for i in range(walk_len - 1):
+        # choose random neighbor index
+        rand_nbr_i = random.choice(util.nbrs(df, curr_arch_i).index.tolist())
+        walk.append(rand_nbr_i)
+        curr_arch_i = rand_nbr_i
+    return walk
+
