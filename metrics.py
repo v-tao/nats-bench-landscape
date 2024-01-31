@@ -30,20 +30,20 @@ def FDC(df, fit_header):
     # Fitness Distance Correlation
     return (cov_fd) / np.sqrt(var_f * var_d)
 
-def bfs(df, fit_header, start_idx, visited, neutral_net):
-    q = deque([start_idx])
-    visited.add(start_idx)
-    neutral_net.add(start_idx)
+def bfs(df, fit_header, start_i, visited, neutral_net):
+    q = deque([start_i])
+    visited.add(start_i)
+    neutral_net.add(start_i)
 
     while q:
-        curr_arch_idx = q.popleft()
-        curr_fit = df.at[curr_arch_idx, fit_header]
-        nbrs = util.nbrs(df, curr_arch_idx)
-        for nbr_idx in nbrs.index:
-            if nbr_idx not in visited and df.at[nbr_idx, fit_header] == curr_fit:
-                visited.add(nbr_idx)
-                neutral_net.add(nbr_idx)
-                q.append(nbr_idx)
+        curr_arch_i = q.popleft()
+        curr_fit = df.at[curr_arch_i, fit_header]
+        nbrs = util.nbrs(df, curr_arch_i)
+        for nbr_i in nbrs.index:
+            if nbr_i not in visited and df.at[nbr_i, fit_header] == curr_fit:
+                visited.add(nbr_i)
+                neutral_net.add(nbr_i)
+                q.append(nbr_i)
 
 def neutral_nets(df, fit_header):
     visited = set()
@@ -51,10 +51,43 @@ def neutral_nets(df, fit_header):
     for i in tqdm(range(len(df))):
         if i not in visited:
             net = set()
-            bfs(df, image_dataset, fit_header, visited, net)
+            bfs(df, fit_header, i, visited, net)
             if len(net) > 1:
                 nets.append(net)
     return nets    
+
+def percolation_index(df, fit_header, net):
+    # gets the number of different fitness values surrounding the neutral area
+    values = set()
+    for arch_i in net:
+        for nbr_i in util.nbrs(df, arch_i).index:
+            values.add(df.at[nbr_i, fit_header])
+    return len(values)
+
+
+def neutral_nets_analysis(df, fit_header, neutral_nets):
+    nets_info = []
+    for net in tqdm(neutral_nets):
+        # get max and average distances between architectures
+        net_list = list(net)
+        arch_strs = df.loc[net_list, "ArchitectureString"].tolist()
+        fit = df.at[net_list[0], fit_header]
+        dists = []
+        for i in range(len(arch_strs)):
+            for j in range(i + 1, len(arch_strs)):
+                dists.append(util.edit_distance(arch_strs[i], arch_strs[j]))  
+        max_dist = max(dists)
+        avg_dist = sum(dists)/len(dists)      
+
+        net_info = {
+            "Size": len(net),
+            "Fitness": fit,
+            "PercolationIndex": percolation_index(df, fit_header, net),
+            "MaxEditDistance": max_dist,
+            "AvgEditDistance": avg_dist,
+        }
+        nets_info.append(net_info)
+    return nets_info
 
 def num_local_maxima(df, fit_header):
     fits = df[fit_header].values
@@ -66,8 +99,8 @@ def num_local_maxima(df, fit_header):
         curr_arch_fit = curr_arch[fit_header]
         nbrs = util.nbrs(df, i)
         # for each neighbor, check if fitness is less than current architecture
-        for nbr_idx in nbrs.index:
-            nbr_fit = df.at[nbr_idx, fit_header]
+        for nbr_i in nbrs.index:
+            nbr_fit = df.at[nbr_i, fit_header]
             # if the neighbor is fitter than the current architecture, the current architecture is not a local maximum
             if nbr_fit > curr_arch_fit:
                 local_max = False
