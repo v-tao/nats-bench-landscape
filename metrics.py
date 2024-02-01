@@ -139,21 +139,42 @@ def autocorrelation(df, fit_header, lag=1, trials=200, walk_len=100):
     return np.average(autocorr)
 
 def weak_basin(df, fit_header, start_i):
+    fits = df[fit_header].values
+    # get the weak basin for a particular architecture
     q = deque([start_i])
     visited = {start_i}
     basin = {start_i}
 
     while q:
         curr_arch_i = q.popleft()
-        curr_fit = df.at[curr_arch_i, fit_header]
-        nbrs = util.nbrs(df, curr_arch_i)
-        for nbr_i in nbrs.index:
-            if nbr_i not in visited and df.at[nbr_i, fit_header] < curr_fit:
+        nbrs_i = util.nbrs(df, curr_arch_i).index.tolist()
+        for nbr_i in nbrs_i:
+            if nbr_i not in visited and fits[nbr_i] < fits[curr_arch_i]:
                 visited.add(nbr_i)
                 basin.add(nbr_i)
                 q.append(nbr_i)
-    
     return basin
+
+def weak_basins(df, fit_header):
+    maxima = local_maxima(df, fit_header)
+    basins = dict()
+    for maximum in tqdm(maxima):
+        basins[maximum] = weak_basin(df, fit_header, maximum)
+    return basins
+
+def strong_basins(weak_basins_dict):
+    # given a dictionary of weak basins of optima, find the strong basins of the corresponding optima
+    basins = weak_basins_dict.values()
+    not_unique = set()
+    # get all of the archs that appear in more than one weak basin
+    for basin1 in basins:
+        for basin2 in basins:
+            if basin1 != basin2:
+                not_unique.update(basin1 & basin2)
+    strong_basins_dict = dict()
+    for k in weak_basins_dict.keys():
+        strong_basins_dict[k] = weak_basins_dict[k] - not_unique
+    return strong_basins_dict
 
 
 
