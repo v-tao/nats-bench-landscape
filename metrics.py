@@ -21,17 +21,12 @@ def FDC(df, fit_header):
     fits = df[fit_header].values
     dists = dists_to_arch(df, opt["ArchitectureString"])
 
-    # covariance between fitnesses and distances
-    cov_fd = np.cov(fits, dists)[0, 1]
-
-    # variances of fitness and distances
-    var_f = np.var(fits)
-    var_d = np.var(dists)
+    cov_matrix = np.cov(fits, dists)
 
     # Fitness Distance Correlation
-    return (cov_fd) / np.sqrt(var_f * var_d)
+    return cov_matrix[0, 1] / np.sqrt(cov_matrix[0, 0] * cov_matrix[1, 1])
 
-def bfs(df, fit_header, start_i, visited, neutral_net):
+def neutral_net_bfs(df, fit_header, start_i, visited, neutral_net):
     q = deque([start_i])
     visited.add(start_i)
     neutral_net.add(start_i)
@@ -52,7 +47,7 @@ def neutral_nets(df, fit_header):
     for i in tqdm(range(len(df))):
         if i not in visited:
             net = set()
-            bfs(df, fit_header, i, visited, net)
+            neutral_net_bfs(df, fit_header, i, visited, net)
             if len(net) > 1:
                 nets.append(net)
     return nets    
@@ -90,27 +85,35 @@ def neutral_nets_analysis(df, fit_header, neutral_nets):
         nets_info.append(net_info)
     return nets_info
 
-def num_local_maxima(df, fit_header):
+def local_maxima(df, fit_header):
+    # returns local_maxima
     fits = df[fit_header].values
-    count = 0
+    visited = set()
+    maxima = []
     # iterate through all architectures
     for i in tqdm(range(len(df))):
-        local_max = True
-        curr_arch = df.loc[i]
-        curr_arch_fit = curr_arch[fit_header]
-        nbrs = util.nbrs(df, i)
-        # for each neighbor, check if fitness is less than current architecture
-        for nbr_i in nbrs.index:
-            nbr_fit = df.at[nbr_i, fit_header]
-            # if the neighbor is fitter than the current architecture, the current architecture is not a local maximum
-            if nbr_fit > curr_arch_fit:
-                local_max = False
-                break
-        if local_max:
-            count += 1
-    return count
+        if i not in visited:
+            local_max = True
+            nbrs = util.nbrs(df, i)
+            nbrs_i = nbrs.index.tolist()
+            visited.add(i)
+            # for each neighbor, check if fitness is less than current architecture
+            for nbr_i in nbrs_i:
+                # if the neighbor is greater, then the current arch cannot be a local maximum
+                if fits[nbr_i] > fits[i]:
+                    local_max = False
+                # if the neighbor is smaller, then the neighbor cannot be a local maximum
+                elif fits[nbr_i] < fits[i]:
+                    visited.add(nbr_i)
+            if local_max:
+                maxima.append(i)
+    return maxima
 
-def random_walk(df, fit_header, start_i, walk_len):
+
+def num_local_maxima(df, fit_header):
+    return len(local_maxima(df, fit_header))
+
+def random_walk(df, fit_header, start_i, walk_len=100):
     # start a random walk at the given starting architecture for the given walk length
     curr_arch_i = start_i
     walk = [curr_arch_i]
@@ -120,4 +123,37 @@ def random_walk(df, fit_header, start_i, walk_len):
         walk.append(rand_nbr_i)
         curr_arch_i = rand_nbr_i
     return walk
+
+def autocorrelation(df, fit_header, lag=1, trials=200, walk_len=100):
+    # estimates the autocorrelation of a population for a certain lag
+    autocorrs = np.zeros(trials)
+    for i in tqdm(range(trials)):
+        start_i = random.randint(0, len(df)-1)
+        walk = random_walk(df, fit_header, start_i, walk_len)
+        fits = df.loc[walk, fit_header].values
+        cov_matrix = np.cov(fits[:-lag], fits[lag:])
+        autocorr = cov_matrix[0, 1]/np.sqrt(cov_matrix[0, 0] * cov_matrix[1, 1])
+        autocorrs[i] = (autocorr)
+    print(np.average(autocorr))
+    print(1/np.average(autocorr))
+    return np.average(autocorr)
+
+def weak_basin(df, fit_header, start_i):
+    q = deque([start_i])
+    visited = {start_i}
+    basin = {start_i}
+
+    while q:
+        curr_arch_i = q.popleft()
+        curr_fit = df.at[curr_arch_i, fit_header]
+        nbrs = util.nbrs(df, curr_arch_i)
+        for nbr_i in nbrs.index:
+            if nbr_i not in visited and df.at[nbr_i, fit_header] < curr_fit:
+                visited.add(nbr_i)
+                basin.add(nbr_i)
+                q.append(nbr_i)
+    
+    return basin
+
+
 
