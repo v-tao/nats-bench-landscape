@@ -176,5 +176,3 @@ def strong_basins(weak_basins_dict):
         strong_basins_dict[k] = weak_basins_dict[k] - not_unique
     return strong_basins_dict
 
-
-
