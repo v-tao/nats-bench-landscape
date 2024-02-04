@@ -154,15 +154,27 @@ def local_maxima(fits, arch_strs):
                 maxima.append(i)
     return maxima
 
-def random_walk(df, fit_header, start_i, walk_len=100):
+def random_walk(fits, arch_strs, start_i, walk_len=100):
+    """
+    Performs a random walk on the search space, starting at a given architecture index.
+
+    Parameters:
+        fits (numpy.ndarray): fitness values corresponding to architecture indices
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
+        start_i (int): index of starting architecture
+        walk_len (int, default 100): length of walk
+    
+    Returns:
+        (list of ints): indices of a random walk in the search space
+    """
     # start a random walk at the given starting architecture for the given walk length
     curr_arch_i = start_i
-    walk = [curr_arch_i]
+    walk = [curr_i]
     for i in range(walk_len - 1):
         # choose random neighbor index
-        rand_nbr_i = random.choice(util.nbrs(df, curr_arch_i).index.tolist())
+        rand_nbr_i = random.choice(util.nbrs(arch_strs, curr_i).index.tolist())
         walk.append(rand_nbr_i)
-        curr_arch_i = rand_nbr_i
+        curr_i = rand_nbr_i
     return walk
 
 def autocorrelation(df, fit_header, lag=1, trials=200, walk_len=100):
