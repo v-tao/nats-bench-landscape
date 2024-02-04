@@ -1,15 +1,47 @@
 import numpy as np
-import util
+import pandas as pd
 from tqdm import tqdm
 from collections import deque
 import random
+import util
+
 class FitnessLandscapeAnalysis:
     def __init__(self, fits, genotypes):
+        """
+        Initialize a new instance of FitnessLandscapeAnalysis
+
+        Parameters:
+            fits (numpy.ndarray): array of architecture fitnesses
+            genotypes (list of strings): list of architecture strings
+        """
         self._fits = fits
         self._genotypes = genotypes
         self._size = len(self._fits)
 
-    def FDC():
+    def run_analysis(self):
+        """
+        Runs a fitness landscape analysis of the given fitnesses and genotypes, and returns the corresponding object
+        Parameters:
+            none
+
+        Returns:
+            (object) object containing metrics analysis
+        """
+        FDC = self.FDC()
+        local_maxima = self.local_maxima()
+        autocorrelation = self.autocorrelation()
+        weak_basins = self.weak_basins()
+        strong_basins = self.strong_basins()
+        return {
+            "FDC": FDC,
+            "NumLocalMaxima": len(local_maxima),
+            "Modality": num_local_maxima/self._size,
+            "CorrelationLength": 1/autocorrelation,
+            "NumWeakBasins": len(weak_basins),
+            "NumStrongBasins": len(strong_basins)
+        }
+
+    def FDC(self):
         """
         Returns the fitness distance correlation (FDC) of the search space with the global maximum as the reference point
 
@@ -23,7 +55,7 @@ class FitnessLandscapeAnalysis:
         dists = util.dists_to_arch(self._genotypes, np.argmax(self._fits))
         return np.corrcoef(self._fits, dists)[0, 1]
 
-    def neutral_net_bfs(start_i):
+    def neutral_net_bfs(self, start_i):
         """
         Returns the neutral network around a given starting architecture
 
@@ -47,7 +79,7 @@ class FitnessLandscapeAnalysis:
                     q.append(nbr_i)
         return net
 
-    def neutral_nets():
+    def neutral_nets(self):
         """
         Returns the neutral networks of a search space
 
@@ -65,7 +97,7 @@ class FitnessLandscapeAnalysis:
                 nets.append(net)
         return nets
 
-    def percolation_index(net):
+    def percolation_index(self, net):
         """
         Returns the percolation index (number of unique neighboring fitness values) of a given neutral network
 
@@ -83,7 +115,7 @@ class FitnessLandscapeAnalysis:
                 values.add(self._fits[nbr_i])
         return len(values)
 
-    def neutral_nets_analysis():
+    def neutral_nets_analysis(self):
         """
         Returns analysis of each neutral network in a search space
 
@@ -120,7 +152,7 @@ class FitnessLandscapeAnalysis:
             nets_info.append(net_info)
         return nets_info
 
-    def local_maxima():
+    def local_maxima(self):
         """
         Returns a list of indices corresponding to local maxima in the search space
 
@@ -152,7 +184,7 @@ class FitnessLandscapeAnalysis:
                     maxima.append(i)
         return maxima
 
-    def random_walk(start_i, walk_len=100):
+    def random_walk(self, start_i, walk_len=100):
         """
         Performs a random walk on the search space, starting at a given architecture index.
 
@@ -173,7 +205,7 @@ class FitnessLandscapeAnalysis:
             curr_i = rand_nbr_i
         return walk
 
-    def autocorrelation(lag=1, trials=200, walk_len=100):
+    def autocorrelation(self, lag=1, trials=200, walk_len=100):
         """
         Estimates the autocorrelation for the population given a certain lag.
 
@@ -194,7 +226,7 @@ class FitnessLandscapeAnalysis:
             autocorrs[i] = np.corrcoef(walk_fits[:-lag], walk_fits[lag:])[0, 1]
         return np.average(autocorr)
 
-    def weak_basin(start_i):
+    def weak_basin(self, start_i):
         """
         Returns the weak basin (set of architectures with a strictly increasing path) of a given architecture
 
@@ -219,7 +251,7 @@ class FitnessLandscapeAnalysis:
                     q.append(nbr_i)
         return basin
 
-    def weak_basins():
+    def weak_basins(self):
         """
         Returns all the weak basins of the search space, that is the weak basins of all optima
 
@@ -235,7 +267,7 @@ class FitnessLandscapeAnalysis:
             basins[maximum] = self.weak_basin(df, fit_header, maximum)
         return basins
 
-    def strong_basins(weak_basins_dict):
+    def strong_basins(self, weak_basins_dict):
         """
         Finds the strong basins corresponding to the weak basins. A strong basin contains only points that belong to one weak basin
 
