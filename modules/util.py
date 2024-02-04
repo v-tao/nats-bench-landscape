@@ -136,33 +136,28 @@ def nbr_strings(arch_str):
                     nbrs.add(lists2str(nbr))
     return nbrs
 
-def nbrs(df, arch_i):
+def nbrs(arch_strs, arch_i):
     """
-    Returns dataframe rows that correspond with neighbors of architecture at index arch_i
+    Returns list of indices that correspond with neighbors of the architecture at index arch_i
 
     Parameters:
-        df (pandas.DataFrame): dataframe containing the architectures data
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
         arch_i (int): index of architecture
 
     Returns:
-        (pandas.Dataframe): dataframe corresponding to rows of the given architecture's neighbors
+        (list of ints): corresponding indices of neighbor architectures
     """
-    nbr_strs = nbr_strings(df.at[arch_i, "ArchitectureString"])
-    return df[df["ArchitectureString"].isin(nbr_strs)]
+    nbr_strs = nbr_strings(arch_strs[arch_i])
+    return [index(nbr_str) for nbr_str in nbr_strings]
 
-def dists_to_arch(df, arch_i):
+def dists_to_arch(arch_strs, arch_i):
     """
-    Returns the edit distances of each architecture to a given architecture string
+    Returns the edit distances of each architecture to a given architecture
 
     Parameters:
-        df (pandas.DataFrame): dataframe containing the architectures data
-        arch_str (String): string representation of architecture
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
+        arch_i (int): index of reference architecture
     Returns:
-        (numpy.ndarray): distances of all architectures to given architecture string, by index
+        (numpy.ndarray): distances of all architectures to given architecture, by index
     """
-    # gets the distances of each architecture to a given architecture string
-    arch_str = df.at[arch_i, "ArchitectureString"]
-    dists = np.empty(len(df))
-    for i in range(len(df)):
-        dists[i] = util.edit_distance(df.at[i, "ArchitectureString"], arch_str)
-    return dists
+    return [edit_distance(arch_str, arch_strs[arch_i]) for arch_str in arch_strs]

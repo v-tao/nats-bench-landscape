@@ -4,54 +4,83 @@ from tqdm import tqdm
 from collections import deque
 import random
 
-def global_max(df, fit_header):
-    # gets the fittest architecture for a given fitness metric
-    global_max_i = df[fit_header].idxmax()
-    return df.loc[global_max_i]
+def FDC(fits, arch_strs):
+    """
+    Returns the fitness distance correlation (FDC) of the search space with the global maximum as the reference point
 
-def dists_to_arch(df, arch):
-    # gets the distances of each architecture to a given architecture string
-    dists = np.zeros(len(df))
-    for i in range(len(df)):
-        dists[i] = util.edit_distance(df.loc[i]["ArchitectureString"], arch)
-    return dists
+    Parameters:
+        fits (numpy.ndarray): fitness values corresponding to architecture indices
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
 
-def FDC(fits, dists):
-    cov_matrix = np.cov(fits, dists)
-    return cov_matrix[0, 1] / np.sqrt(cov_matrix[0, 0] * cov_matrix[1, 1])
+    Returns:
+        (float): FDC of the search space
+    """
+    dists = util.dists_to_arch(arch_strs, np.argmax(fits)) # np.argmax(fits) gets the index of the fittest architecture
+    return np.corrcoef(fits, dists)[0, 1]
 
-def neutral_net_bfs(df, fit_header, start_i, visited, neutral_net):
+def neutral_net_bfs(fits, arch_strs, start_i):
+    """
+    Returns the neutral network around a given starting architecture
+
+    Parameters:
+        fits (numpy.ndarray): fitness values corresponding to architecture indices
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
+        start_i (int): index of starting architecture
+
+    Returns:
+        (set of ints): indices corresponding to a neutral network around the starting architecture
+    """
     q = deque([start_i])
-    visited.add(start_i)
-    neutral_net.add(start_i)
-
+    visited = {start_i}
+    neutral_net = {start_i}
     while q:
-        curr_arch_i = q.popleft()
-        curr_fit = df.at[curr_arch_i, fit_header]
-        nbrs = util.nbrs(df, curr_arch_i)
+        curr_i = q.popleft()
+        nbrs = util.nbrs(arch_strs, curr_arch_i)
         for nbr_i in nbrs.index:
-            if nbr_i not in visited and df.at[nbr_i, fit_header] == curr_fit:
+            # only explore neighbors that have the same fitness as the current architecture
+            if nbr_i not in visited and fits[nbr_i] == fits[curr_i]:
                 visited.add(nbr_i)
                 neutral_net.add(nbr_i)
                 q.append(nbr_i)
+    return neutral_net
 
-def neutral_nets(df, fit_header):
-    visited = set()
-    nets = []
-    for i in tqdm(range(len(df))):
-        if i not in visited:
-            net = set()
-            neutral_net_bfs(df, fit_header, i, visited, net)
-            if len(net) > 1:
-                nets.append(net)
-    return nets    
+def neutral_nets(fits, arch_strs):
+    """
+    Returns the neutral networks of a search space
 
-def percolation_index(df, fit_header, net):
+    Parameters:
+        fits (numpy.ndarray): fitness values corresponding to architecture indices
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
+
+    Returns:
+        (list of set of ints): list of neutral networks of the search space
+    """
+    neutral_nets = []
+    # do bfs starting from each architecture to search for neutral networks
+    for i in tqdm(range(len(fits))):
+        neutral_net = neutral_net_bfs(fits, arch_strs, start_i)
+        if len(neutral_net) > 1:
+            neutral_nets.append(neutral_net)
+    return neutral_nets
+
+def percolation_index(fits, arch_strs, neutral_net):
+    """
+    Returns the percolation index (number of unique neighboring fitness values) of a given neutral network
+
+    Parameters:
+        fits (numpy.ndarray): fitness values corresponding to architecture indices
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
+        neutral_net (set of ints): indices corresponding to a neutral network
+    
+    Returns:
+        (int): percolation index (number of unique neighboring fitness values)
+    """
     # gets the number of different fitness values surrounding the neutral area
     values = set()
+    # go through all neighbors of all architectures and record their fitness values
     for arch_i in net:
-        for nbr_i in util.nbrs(df, arch_i).index:
-            values.add(df.at[nbr_i, fit_header])
+        for nbr_i in util.nbrs(arch_strs, arch_i):
+            values.add(fits[nbr_i])
     return len(values)
 
 
