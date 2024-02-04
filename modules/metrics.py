@@ -154,9 +154,6 @@ def local_maxima(fits, arch_strs):
                 maxima.append(i)
     return maxima
 
-def num_local_maxima(df, fit_header):
-    return len(local_maxima(df, fit_header))
-
 def random_walk(df, fit_header, start_i, walk_len=100):
     # start a random walk at the given starting architecture for the given walk length
     curr_arch_i = start_i
