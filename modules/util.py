@@ -70,8 +70,8 @@ def str2edges(arch_str):
     # iterate through nodes
     for i in range(len(arch)):
     # iterate through the incoming edges
-    for j in range(i+1):
-        edges.append(arch[i][j][0])
+        for j in range(i+1):
+            edges.append(arch[i][j][0])
     return edges
 
 def edges2str(edges):
@@ -105,8 +105,8 @@ def edit_distance(arch1_str, arch2_str):
     assert(len(arch1_edges) == len(arch2_edges))
     edit_distance = 0
     for i in range(len(arch1_edges)):
-    if arch1_edges[i] != arch2_edges[i]:
-        edit_distance += 1
+        if arch1_edges[i] != arch2_edges[i]:
+            edit_distance += 1
     return edit_distance
 
 def nbr_strings(arch_str):
@@ -148,7 +148,7 @@ def nbrs(arch_strs, arch_i):
         (list of ints): corresponding indices of neighbor architectures
     """
     nbr_strs = nbr_strings(arch_strs[arch_i])
-    return [index(nbr_str) for nbr_str in nbr_strings]
+    return [arch_strs.index(nbr_str) for nbr_str in nbr_strs]
 
 def dists_to_arch(arch_strs, arch_i):
     """

@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 from collections import deque
 import random
-import util
+from modules import util
 
 class FitnessLandscapeAnalysis:
     def __init__(self, fits, genotypes):
