@@ -149,3 +149,20 @@ def nbrs(df, arch_i):
     """
     nbr_strs = nbr_strings(df.at[arch_i, "ArchitectureString"])
     return df[df["ArchitectureString"].isin(nbr_strs)]
+
+def dists_to_arch(df, arch_i):
+    """
+    Returns the edit distances of each architecture to a given architecture string
+
+    Parameters:
+        df (pandas.DataFrame): dataframe containing the architectures data
+        arch_str (String): string representation of architecture
+    Returns:
+        (numpy.ndarray): distances of all architectures to given architecture string, by index
+    """
+    # gets the distances of each architecture to a given architecture string
+    arch_str = df.at[arch_i, "ArchitectureString"]
+    dists = np.empty(len(df))
+    for i in range(len(df)):
+        dists[i] = util.edit_distance(df.at[i, "ArchitectureString"], arch_str)
+    return dists

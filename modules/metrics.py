@@ -16,14 +16,8 @@ def dists_to_arch(df, arch):
         dists[i] = util.edit_distance(df.loc[i]["ArchitectureString"], arch)
     return dists
 
-def FDC(df, fit_header):
-    opt = global_max(df, fit_header)
-    fits = df[fit_header].values
-    dists = dists_to_arch(df, opt["ArchitectureString"])
-
+def FDC(fits, dists):
     cov_matrix = np.cov(fits, dists)
-
-    # Fitness Distance Correlation
     return cov_matrix[0, 1] / np.sqrt(cov_matrix[0, 0] * cov_matrix[1, 1])
 
 def neutral_net_bfs(df, fit_header, start_i, visited, neutral_net):
