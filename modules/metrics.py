@@ -86,7 +86,14 @@ def percolation_index(fits, arch_strs, net):
 
 def neutral_nets_analysis(fits, arch_strs):
     """
-    
+    Returns analysis of each neutral network in a search space
+
+    Parameters:
+        fits (numpy.ndarray): fitness values corresponding to architecture indices
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
+
+    Returns:
+        (list of dicts): analysis of each neutral network
     """
     nets = neutral_nets(fits, arch_strs)
     nets_info = []
