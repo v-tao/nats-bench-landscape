@@ -6,13 +6,35 @@ import random
 from modules import util
 
 class FitnessLandscapeAnalysis:
+    """
+    This class contains methods for calculating various metrics of the search space for the purposes of fitness landscape analysis
+
+    Attributes:
+        _fits (np.ndarray): array of fitnesses
+        _genotypes (list of strings): list of genotypes
+    
+    Methods:
+        run_analysis(): runs general analysis of fitness landscape
+        FDC(): calculates the fitness distance correlation to the global maximum
+        neutral_net_bfs(start_i): uses BFS to obtain the neutral network around the given starting architecture
+        neutral_nets(): returns a list of neutral networks
+        percolation_index(net): returns the percolation index (number of unique fitness values surrounding the neutral network) of a neutral network
+        neutral_nets_analysis(): runs a more in-depth analysis of the neutral networks
+        local_maxima(): returns the indices of the local maxima
+        random_walk(start_i, walk_len=100): generates a random walk along the landscape using one-edge adjustments
+        autocorrelation(lag=1, trials=200, walk_len=100): estimates the autocorrelation for the population
+        weak_basin(start_i): returns the weak basin (architectures who have a strictly increasing path to the target architecture) around the given target architecture
+        weak_basins(): returns all the weak basins around all local maxima
+        strong_baisns(weak_basins_dict): returns all the strong basins (architectures who have a strictly increasing path uniquely to one target architecture)
+    """
+
     def __init__(self, fits, genotypes):
         """
         Initialize a new instance of FitnessLandscapeAnalysis
 
         Parameters:
-            fits (numpy.ndarray): array of architecture fitnesses
-            genotypes (list of strings): list of architecture strings
+            fits (numpy.ndarray): array of fitnesses
+            genotypes (list of strings): list of genotypes
         """
         self._fits = fits
         self._genotypes = genotypes
@@ -20,7 +42,7 @@ class FitnessLandscapeAnalysis:
 
     def run_analysis(self):
         """
-        Runs a fitness landscape analysis of the given fitnesses and genotypes, and returns the corresponding object
+        Runs a fitness landscape analysis of the fitnesses and genotypes, and returns the corresponding object
         Parameters:
             none
 
@@ -287,6 +309,5 @@ class FitnessLandscapeAnalysis:
                     not_unique.update(basin1 & basin2)
         strong_basins_dict = dict()
         for k in weak_basins_dict.keys():
-            strong_basin = weak_basins_dict[k] - not_unique
             strong_basins_dict[k] = weak_basins_dict[k] - not_unique
         return strong_basins_dict
