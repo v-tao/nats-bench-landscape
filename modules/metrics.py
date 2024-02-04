@@ -83,7 +83,6 @@ def percolation_index(fits, arch_strs, net):
             values.add(fits[nbr_i])
     return len(values)
 
-
 def neutral_nets_analysis(fits, arch_strs):
     """
     Returns analysis of each neutral network in a search space
@@ -122,30 +121,38 @@ def neutral_nets_analysis(fits, arch_strs):
         nets_info.append(net_info)
     return nets_info
 
-def local_maxima(df, fit_header):
-    # returns local_maxima
-    fits = df[fit_header].values
+def local_maxima(fits, arch_strs):
+    """
+    Returns a list of indices corresponding to local maxima in the search space
+
+    Parameters:
+        fits (numpy.ndarray): fitness values corresponding to architecture indices
+        arch_strs (list of Strings): architecture strings corresponding to architecture indices
+    
+    Returns:
+        (list of ints): indices corresponding to local maxima in the search space
+    """
     visited = set()
     maxima = []
     # iterate through all architectures
     for i in tqdm(range(len(df))):
         if i not in visited:
+            # create a flag for if the architecture is a maximum or not
             local_max = True
-            nbrs = util.nbrs(df, i)
-            nbrs_i = nbrs.index.tolist()
+            nbrs = util.nbrs(arch_strs, i)
             visited.add(i)
             # for each neighbor, check if fitness is less than current architecture
-            for nbr_i in nbrs_i:
+            for nbr_i in nbrs:
                 # if the neighbor is greater, then the current arch cannot be a local maximum
                 if fits[nbr_i] > fits[i]:
                     local_max = False
                 # if the neighbor is smaller, then the neighbor cannot be a local maximum
                 elif fits[nbr_i] < fits[i]:
                     visited.add(nbr_i)
+            # if all the neighbors are smaller, then the current architecture is a local maximum
             if local_max:
                 maxima.append(i)
     return maxima
-
 
 def num_local_maxima(df, fit_header):
     return len(local_maxima(df, fit_header))
