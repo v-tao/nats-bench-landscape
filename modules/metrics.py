@@ -32,7 +32,7 @@ def neutral_net_bfs(fits, arch_strs, start_i):
     """
     q = deque([start_i])
     visited = {start_i}
-    neutral_net = {start_i}
+    net = {start_i}
     while q:
         curr_i = q.popleft()
         nbrs = util.nbrs(arch_strs, curr_arch_i)
@@ -40,9 +40,9 @@ def neutral_net_bfs(fits, arch_strs, start_i):
             # only explore neighbors that have the same fitness as the current architecture
             if nbr_i not in visited and fits[nbr_i] == fits[curr_i]:
                 visited.add(nbr_i)
-                neutral_net.add(nbr_i)
+                net.add(nbr_i)
                 q.append(nbr_i)
-    return neutral_net
+    return net
 
 def neutral_nets(fits, arch_strs):
     """
@@ -55,22 +55,22 @@ def neutral_nets(fits, arch_strs):
     Returns:
         (list of set of ints): list of neutral networks of the search space
     """
-    neutral_nets = []
+    nets = []
     # do bfs starting from each architecture to search for neutral networks
     for i in tqdm(range(len(fits))):
-        neutral_net = neutral_net_bfs(fits, arch_strs, start_i)
-        if len(neutral_net) > 1:
-            neutral_nets.append(neutral_net)
-    return neutral_nets
+        net = neutral_net_bfs(fits, arch_strs, start_i)
+        if len(net) > 1:
+            nets.append(net)
+    return nets
 
-def percolation_index(fits, arch_strs, neutral_net):
+def percolation_index(fits, arch_strs, net):
     """
     Returns the percolation index (number of unique neighboring fitness values) of a given neutral network
 
     Parameters:
         fits (numpy.ndarray): fitness values corresponding to architecture indices
         arch_strs (list of Strings): architecture strings corresponding to architecture indices
-        neutral_net (set of ints): indices corresponding to a neutral network
+        net (set of ints): indices corresponding to a neutral network
     
     Returns:
         (int): percolation index (number of unique neighboring fitness values)
@@ -84,24 +84,31 @@ def percolation_index(fits, arch_strs, neutral_net):
     return len(values)
 
 
-def neutral_nets_analysis(df, fit_header, neutral_nets):
+def neutral_nets_analysis(fits, arch_strs):
+    """
+    
+    """
+    nets = neutral_nets(fits, arch_strs)
     nets_info = []
-    for net in tqdm(neutral_nets):
-        # get max and average distances between architectures
+    # run analysis for each neutral net
+    for net in tqdm(nets):
+        # convert neutral net to a list so it can be indexed to find the fitness of the neutral net
         net_list = list(net)
-        arch_strs = df.loc[net_list, "ArchitectureString"].tolist()
-        fit = df.at[net_list[0], fit_header]
+        net_fit = fits[net[0]]
+        net_strs = [arch_strs[arch_i] for arch_i in net_list]
         dists = []
-        for i in range(len(arch_strs)):
-            for j in range(i + 1, len(arch_strs)):
-                dists.append(util.edit_distance(arch_strs[i], arch_strs[j]))  
+
+        # calculate edit distance between all pairs of architectures in the neutral net
+        for i in range(len(net_strs)):
+            for j in range(i + 1, len(net_strs)):
+                dists.append(util.edit_distance(net_strs[i], net_strs[j]))  
         max_dist = max(dists)
         avg_dist = sum(dists)/len(dists)      
 
         net_info = {
-            "Size": len(net),
-            "Fitness": fit,
-            "PercolationIndex": percolation_index(df, fit_header, net),
+            "Size": len(neutral_net),
+            "Fitness": neutral_net_fit,
+            "PercolationIndex": percolation_index(fits, arch_strs, neutral_net),
             "MaxEditDistance": max_dist,
             "AvgEditDistance": avg_dist,
         }
