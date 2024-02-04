@@ -29,13 +29,13 @@ class FitnessLandscapeAnalysis:
         """
         FDC = self.FDC()
         local_maxima = self.local_maxima()
-        autocorrelation = self.autocorrelation()
+        autocorrelation = self.autocorrelation(trials=10, walk_len=10)
         weak_basins = self.weak_basins()
-        strong_basins = self.strong_basins()
+        strong_basins = self.strong_basins(weak_basins)
         return {
             "FDC": FDC,
             "NumLocalMaxima": len(local_maxima),
-            "Modality": num_local_maxima/self._size,
+            "Modality": len(local_maxima)/self._size,
             "CorrelationLength": 1/autocorrelation,
             "NumWeakBasins": len(weak_basins),
             "NumStrongBasins": len(strong_basins)
@@ -224,7 +224,7 @@ class FitnessLandscapeAnalysis:
             walk = self.random_walk(start_i, walk_len)
             walk_fits = [self._fits[i] for i in walk]
             autocorrs[i] = np.corrcoef(walk_fits[:-lag], walk_fits[lag:])[0, 1]
-        return np.average(autocorr)
+        return np.average(autocorrs)
 
     def weak_basin(self, start_i):
         """
@@ -242,10 +242,10 @@ class FitnessLandscapeAnalysis:
 
         while q:
             curr_i = q.popleft()
-            nbrs = util.nbrs(self._genotypes, curr_arch_i)
+            nbrs = util.nbrs(self._genotypes, curr_i)
             for nbr_i in nbrs:
                 # add neighbors who are worse than current architecture
-                if nbr_i not in visited and self._fits[nbr_i] < self._fits[curr_arch_i]:
+                if nbr_i not in visited and self._fits[nbr_i] < self._fits[curr_i]:
                     visited.add(nbr_i)
                     basin.add(nbr_i)
                     q.append(nbr_i)
@@ -261,10 +261,10 @@ class FitnessLandscapeAnalysis:
         Returns:
             (dict): dictionary of weak basins where the key is the index of a local max and the value is the corresponding weak basin
         """
-        maxima = self.local_maxima(df, fit_header)
+        maxima = self.local_maxima()[:3]
         basins = dict()
-        for maximum in tqdm(maxima):
-            basins[maximum] = self.weak_basin(df, fit_header, maximum)
+        for max_i in tqdm(maxima):
+            basins[max_i] = self.weak_basin(max_i)
         return basins
 
     def strong_basins(self, weak_basins_dict):
@@ -278,7 +278,7 @@ class FitnessLandscapeAnalysis:
             (dict): dictionary of strong basins where the key is the index of a local max and the value is the corresponding strong basin
         """
         # given a dictionary of weak basins of optima, find the strong basins of the corresponding optima
-        basins = self.weak_basins_dict.values()
+        basins = weak_basins_dict.values()
         not_unique = set()
         # get all of the archs that appear in more than one weak basin
         for basin1 in basins:
@@ -287,5 +287,6 @@ class FitnessLandscapeAnalysis:
                     not_unique.update(basin1 & basin2)
         strong_basins_dict = dict()
         for k in weak_basins_dict.keys():
+            strong_basin = weak_basins_dict[k] - not_unique
             strong_basins_dict[k] = weak_basins_dict[k] - not_unique
         return strong_basins_dict
