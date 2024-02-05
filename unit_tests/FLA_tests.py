@@ -57,7 +57,7 @@ class TestFLA(unittest.TestCase):
         self.assertEqual(net_info["MaxEditDistance"], 1)
     
     def test_weak_basin(self):
-        self.assertEqual(self._FLA.weak_basin(12), {12, 13, 14, 4, 28, 44, 8, 40, 24, 0, 10, 9, 15, 30, 6, 29, 60, 46, 41, 56, 26, 1, 2, 11, 25, 21, 38, 27, 33, 48, 3, 5, 18, 50, 7, 23, 22, 31, 55, 20, 63})
+        self.assertEqual(self._FLA.weak_basin(12), {13, 14, 4, 28, 44, 8, 40, 24, 0, 10, 9, 15, 30, 6, 29, 60, 46, 41, 56, 26, 1, 2, 11, 25, 21, 38, 27, 33, 48, 3, 5, 18, 50, 7, 23, 22, 31, 55, 20, 63})
 
 if __name__ == "__main__":
     

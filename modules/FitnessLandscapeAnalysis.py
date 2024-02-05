@@ -269,7 +269,7 @@ class FitnessLandscapeAnalysis:
         """
         q = deque([start_i])
         visited = {start_i}
-        basin = {start_i}
+        basin = set()
 
         while q:
             curr_i = q.popleft()
@@ -292,7 +292,7 @@ class FitnessLandscapeAnalysis:
         Returns:
             (dict): dictionary of weak basins where the key is the index of a local max and the value is the corresponding weak basin
         """
-        maxima = self.local_maxima()[:3]
+        maxima = self.local_maxima()
         basins = dict()
         for max_i in tqdm(maxima):
             basins[max_i] = self.weak_basin(max_i)
