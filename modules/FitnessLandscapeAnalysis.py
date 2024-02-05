@@ -275,8 +275,8 @@ class FitnessLandscapeAnalysis:
             curr_i = q.popleft()
             nbrs = util.nbrs(self._genotypes, curr_i, edges=self._edges)
             for nbr_i in nbrs:
-                # add neighbors who are worse than current architecture
-                if nbr_i not in visited and self._fits[nbr_i] < self._fits[curr_i]:
+                # add neighbors who are no better than current architecture
+                if nbr_i not in visited and self._fits[nbr_i] <= self._fits[curr_i]:
                     visited.add(nbr_i)
                     basin.add(nbr_i)
                     q.append(nbr_i)

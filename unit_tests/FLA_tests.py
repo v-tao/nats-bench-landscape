@@ -19,7 +19,7 @@ class TestFLA(unittest.TestCase):
         # much smaller search space of 64 architectures can be analyzed by hand
         archs = [list(arch_str) for arch_str in product(EDGES, repeat=6)]
         # this is so I can see the edit distances more easily
-        bit_encodings = []
+        self._bit_encodings = []
         for arch in archs:
             bit_encoding = ""
             for edge in arch:
@@ -27,16 +27,13 @@ class TestFLA(unittest.TestCase):
                     bit_encoding += "0"
                 else:
                     bit_encoding += "1"
-            bit_encodings.append(bit_encoding)
+            self._bit_encodings.append(bit_encoding)
         self._genotypes = [util.edges2str(arch_str) for arch_str in archs]
         self._fits = df[df["ArchitectureString"].isin(self._genotypes)]["Cifar10TestAccuracy12Epochs"].values
 
         self._FLA = FitnessLandscapeAnalysis(self._fits, self._genotypes, edges=EDGES)
         self._global_max_i = np.argmax(self._fits)
         self._size = len(self._fits)
-        keys = np.arange(self._size)
-        vals = list(zip((self._fits), bit_encodings))
-        self._fits_dict = dict(zip(keys, vals))
 
     def test_FDC(self):
         FDC = self._FLA.FDC()
@@ -58,6 +55,9 @@ class TestFLA(unittest.TestCase):
         self.assertEqual(net_info["Fitness"], 84.53)
         self.assertEqual(net_info["MaxEditDistance"], 1)
         self.assertEqual(net_info["MaxEditDistance"], 1)
+    
+    def test_weak_basin(self):
+        self.assertEqual(self._FLA.weak_basin(12), {12, 13, 14, 4, 28, 44, 8, 40, 24, 0, 10, 9, 15, 30, 6, 29, 60, 46, 41, 56, 26, 1, 2, 11, 25, 21, 38, 27, 33, 48, 3, 5, 18, 50, 7, 23, 22, 31, 55, 20, 63})
 
 if __name__ == "__main__":
     
