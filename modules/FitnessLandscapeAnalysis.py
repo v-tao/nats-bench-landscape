@@ -29,18 +29,19 @@ class FitnessLandscapeAnalysis:
         strong_baisns(weak_basins_dict): returns all the strong basins (architectures who have a strictly increasing path uniquely to one target architecture)
     """
 
-    def __init__(self, fits, genotypes):
+    def __init__(self, fits, genotypes, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
         """
         Initialize a new instance of FitnessLandscapeAnalysis
 
         Parameters:
             fits (numpy.ndarray): array of fitnesses
             genotypes (list of strings): list of genotypes
+            edges (set of Strings): set of edges to choose from
         """
         self._fits = fits
         self._genotypes = genotypes
         self._size = len(self._fits)
-        self._edges = {Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}
+        self._edges = edges
 
     def run_analysis(self):
         """
@@ -114,11 +115,15 @@ class FitnessLandscapeAnalysis:
             (list of set of ints): list of neutral networks of the search space
         """
         nets = []
+        visited = set()
         # do bfs starting from each architecture to search for neutral networks
         for i in tqdm(range(len(self._fits))):
-            net = self.neutral_net_bfs(self._fits, self._genotypes, start_i)
-            if len(net) > 1:
-                nets.append(net)
+            # bfs should find an entire network at once, so no need to revisit a node that is already in a network
+            if i not in visited:
+                net = self.neutral_net_bfs(i)
+                visited = visited | net
+                if len(net) > 1:
+                    nets.append(net)
         return nets
 
     def percolation_index(self, net):
@@ -136,7 +141,9 @@ class FitnessLandscapeAnalysis:
         # go through all neighbors of all architectures and record their fitness values
         for arch_i in net:
             for nbr_i in util.nbrs(self._genotypes, arch_i, edges=self._edges):
-                values.add(self._fits[nbr_i])
+                # do not add the fitness of the neutral net
+                if nbr_i not in net:
+                    values.add(self._fits[nbr_i])
         return len(values)
 
     def neutral_nets_analysis(self):
@@ -149,14 +156,14 @@ class FitnessLandscapeAnalysis:
         Returns:
             (list of dicts): analysis of each neutral network
         """
-        nets = neutral_nets(self._fits, self._genotypes)
+        nets = self.neutral_nets()
         nets_info = []
         # run analysis for each neutral net
         for net in tqdm(nets):
             # convert neutral net to a list so it can be indexed to find the fitness of the neutral net
             net_list = list(net)
-            net_fit = self._fits[net[0]]
-            net_strs = [self._genotypesarch_strs[arch_i] for arch_i in net_list]
+            net_fit = self._fits[net_list[0]]
+            net_strs = [self._genotypes[arch_i] for arch_i in net_list]
             dists = []
 
             # calculate edit distance between all pairs of architectures in the neutral net
@@ -167,9 +174,9 @@ class FitnessLandscapeAnalysis:
             avg_dist = sum(dists)/len(dists)      
 
             net_info = {
-                "Size": len(neutral_net),
-                "Fitness": neutral_net_fit,
-                "PercolationIndex": percolation_index(neutral_net),
+                "Size": len(net),
+                "Fitness": net_fit,
+                "PercolationIndex": self.percolation_index(net),
                 "MaxEditDistance": max_dist,
                 "AvgEditDistance": avg_dist,
             }

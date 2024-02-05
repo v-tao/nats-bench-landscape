@@ -115,7 +115,7 @@ def nbr_strings(arch_str, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.S
 
     Parameters:
         arch_str (String): string for architectures we want the neighbors of
-        edges (set of Strings): set of allowable edges
+        edges (set of Strings): set of edges to choose from
 
     Returns:
         (set of Strings): set of strings representations of architecture that are one edge different from the input architecture (including edge removal)
@@ -143,6 +143,7 @@ def nbrs(arch_strs, arch_i, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge
     Parameters:
         arch_strs (list of Strings): architecture strings corresponding to architecture indices
         arch_i (int): index of architecture
+        edges (set of Strings): set of edges to choose from
 
     Returns:
         (list of ints): corresponding indices of neighbor architectures
