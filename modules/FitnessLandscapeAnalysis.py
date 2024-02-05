@@ -4,6 +4,7 @@ from tqdm import tqdm
 from collections import deque
 import random
 from modules import util
+from config.Edge import Edge
 
 class FitnessLandscapeAnalysis:
     """
@@ -39,6 +40,7 @@ class FitnessLandscapeAnalysis:
         self._fits = fits
         self._genotypes = genotypes
         self._size = len(self._fits)
+        self._edges = {Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}
 
     def run_analysis(self):
         """
@@ -92,7 +94,7 @@ class FitnessLandscapeAnalysis:
         net = {start_i}
         while q:
             curr_i = q.popleft()
-            nbrs = util.nbrs(self._genotypes, curr_i)
+            nbrs = util.nbrs(self._genotypes, curr_i, edges=self._edges)
             for nbr_i in nbrs:
                 # only explore neighbors that have the same fitness as the current architecture
                 if nbr_i not in visited and self._fits[nbr_i] == self._fits[curr_i]:
@@ -133,7 +135,7 @@ class FitnessLandscapeAnalysis:
         values = set()
         # go through all neighbors of all architectures and record their fitness values
         for arch_i in net:
-            for nbr_i in util.nbrs(self._genotypes, arch_i):
+            for nbr_i in util.nbrs(self._genotypes, arch_i, edges=self._edges):
                 values.add(self._fits[nbr_i])
         return len(values)
 
@@ -191,7 +193,7 @@ class FitnessLandscapeAnalysis:
             if i not in visited:
                 # create a flag for if the architecture is a maximum or not
                 local_max = True
-                nbrs = util.nbrs(self._genotypes, i)
+                nbrs = util.nbrs(self._genotypes, i, edges=self._edges)
                 visited.add(i)
                 # for each neighbor, check if fitness is less than current architecture
                 for nbr_i in nbrs:
@@ -222,7 +224,7 @@ class FitnessLandscapeAnalysis:
         walk = [curr_i]
         for i in range(walk_len - 1):
             # choose random neighbor index
-            rand_nbr_i = random.choice(util.nbrs(self._genotypes, curr_i))
+            rand_nbr_i = random.choice(util.nbrs(self._genotypes, curr_i, edges=self._edges))
             walk.append(rand_nbr_i)
             curr_i = rand_nbr_i
         return walk
@@ -264,7 +266,7 @@ class FitnessLandscapeAnalysis:
 
         while q:
             curr_i = q.popleft()
-            nbrs = util.nbrs(self._genotypes, curr_i)
+            nbrs = util.nbrs(self._genotypes, curr_i, edges=self._edges)
             for nbr_i in nbrs:
                 # add neighbors who are worse than current architecture
                 if nbr_i not in visited and self._fits[nbr_i] < self._fits[curr_i]:

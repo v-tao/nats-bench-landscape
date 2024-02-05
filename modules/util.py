@@ -109,18 +109,18 @@ def edit_distance(arch1_str, arch2_str):
             edit_distance += 1
     return edit_distance
 
-def nbr_strings(arch_str):
+def nbr_strings(arch_str, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
     """
     Returns list of architectures strings that are one edge changed from the input architecture string.
 
     Parameters:
         arch_str (String): string for architectures we want the neighbors of
+        edges (set of Strings): set of allowable edges
 
     Returns:
         (set of Strings): set of strings representations of architecture that are one edge different from the input architecture (including edge removal)
     """
     arch = str2lists(arch_str)
-    edges = {Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}
     nbrs = set()
     # iterate through each non-input node
     for i in range(len(arch)):
@@ -136,7 +136,7 @@ def nbr_strings(arch_str):
                     nbrs.add(lists2str(nbr))
     return nbrs
 
-def nbrs(arch_strs, arch_i):
+def nbrs(arch_strs, arch_i, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
     """
     Returns list of indices that correspond with neighbors of the architecture at index arch_i
 
@@ -147,7 +147,7 @@ def nbrs(arch_strs, arch_i):
     Returns:
         (list of ints): corresponding indices of neighbor architectures
     """
-    nbr_strs = nbr_strings(arch_strs[arch_i])
+    nbr_strs = nbr_strings(arch_strs[arch_i], edges=edges)
     return [arch_strs.index(nbr_str) for nbr_str in nbr_strs]
 
 def dists_to_arch(arch_strs, arch_i):
