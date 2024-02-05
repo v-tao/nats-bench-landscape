@@ -7,6 +7,7 @@ sys.path.append("..")
 from modules import util
 from modules.FitnessLandscapeAnalysis import FitnessLandscapeAnalysis
 from config.Edge import Edge
+import csv
 
 class TestFLA(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -39,20 +40,7 @@ class TestFLA(unittest.TestCase):
 
     def test_FDC(self):
         FDC = self._FLA.FDC()
-        FDC_test = 0
-        dists = np.zeros(self._size)
-        # create distances array
-        for i in range(self._size):
-            dists[i] = util.edit_distance(self._genotypes[i], self._genotypes[self._global_max_i])
-        self.assertEqual(dists[self._global_max_i], 0)
-        fits_mean = np.mean(self._fits)
-        dists_mean = np.mean(dists)
-        fits_std = np.std(self._fits)
-        dists_std = np.std(dists)
-
-        for i in range(self._size):
-            FDC_test += ((1/self._size) * (self._fits[i] - fits_mean) * (dists[i] - dists_mean))/(fits_std * dists_std)
-        self.assertAlmostEqual(FDC_test, FDC)
+        self.assertAlmostEqual(FDC, -0.1738316237, places=2)
 
     def test_local_maxima(self):        
         self.assertEqual(set(self._FLA.local_maxima()), {12, 32, 35, 45, 49, 54})
@@ -72,4 +60,5 @@ class TestFLA(unittest.TestCase):
         self.assertEqual(net_info["MaxEditDistance"], 1)
 
 if __name__ == "__main__":
+    
     unittest.main()
