@@ -4,6 +4,7 @@ from tqdm import tqdm
 from collections import deque
 import random
 import os
+import csv
 from modules import util
 from config.Edge import Edge
 
@@ -108,12 +109,12 @@ class FitnessLandscapeAnalysis:
                     q.append(nbr_i)
         return net
 
-    def neutral_nets(self):
+    def neutral_nets(self, save=True):
         """
         Returns the neutral networks of a search space
 
         Parameters:
-            none
+            save (boolean, deafult True): determines whether or not to save the autocorrelation walk data
 
         Returns:
             (list of set of ints): list of neutral networks of the search space
@@ -128,6 +129,11 @@ class FitnessLandscapeAnalysis:
                 visited = visited | net
                 if len(net) > 1:
                     nets.append(net)
+        if save:
+            with open(f"{self._file_path}/neutral_networks.csv", "w", newline="") as f:
+                csv_writer = csv_writer(f)
+                for net in nets:
+                    csv_writer.writerow(net)
         return nets
 
     def percolation_index(self, net):
@@ -187,12 +193,12 @@ class FitnessLandscapeAnalysis:
             nets_info.append(net_info)
         return nets_info
 
-    def local_maxima(self):
+    def local_maxima(self, save=True):
         """
         Returns a list of indices corresponding to local maxima in the search space
 
         Parameters:
-            none
+            save (boolean, deafult True): determines whether or not to save the autocorrelation walk data
         
         Returns:
             (list of ints): indices corresponding to local maxima in the search space
@@ -217,6 +223,8 @@ class FitnessLandscapeAnalysis:
                 # if all the neighbors are smaller, then the current architecture is a local maximum
                 if local_max:
                     maxima.append(i)
+        if save:
+            np.savetxt(f"{np._file_name}/local_maxima.csv", maxima, delimiter=",")
         return maxima
 
     def random_walk(self, start_i, walk_len=100):
@@ -266,8 +274,8 @@ class FitnessLandscapeAnalysis:
         if save:
             # save the walk history for each autocorrelation, and save each autocorrelation
             os.makedirs(f"{self._file_path}/autocorrelation", exists_ok=True)
-            np.savetxt(f"{self._file_path}/autocorrelation/autocorrelation_walk_history.csv", history, delimiter=",")
-            np.savetxt(f"{self._file_path}/autocorrelation/autocorrelations.csv", autocorrs, delimiter=",")
+            np.savetxt(f"{self._file_path}/autocorrelation/walk_history_lag_{lag}_trials_{trials}_walk_len_{walk_len}.csv", history, delimiter=",")
+            np.savetxt(f"{self._file_path}/autocorrelation/autocorrelations_lag_{lag}_trials_{trials}_walk_len_{walk_len}.csv", autocorrs, delimiter=",")
         
         return np.average(autocorrs)
 
