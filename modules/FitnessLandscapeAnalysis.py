@@ -16,7 +16,6 @@ class FitnessLandscapeAnalysis:
         _fits (np.ndarray): array of fitnesses
         _genotypes (list of strings): list of genotypes
         _file_path (String): location where data will be saved
-        _seed (int): seed for RNG
         _edges (set of Strings): set of edges to choose from
     
     Methods:
@@ -36,7 +35,7 @@ class FitnessLandscapeAnalysis:
         strong_baisns(weak_basins_dict): returns all the strong basins (architectures who have a strictly increasing path uniquely to one target architecture)
     """
 
-    def __init__(self, fits, genotypes, file_path, seed=0, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
+    def __init__(self, fits, genotypes, file_path, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
         """
         Initialize a new instance of FitnessLandscapeAnalysis
 
@@ -44,16 +43,13 @@ class FitnessLandscapeAnalysis:
             fits (numpy.ndarray): array of fitnesses
             genotypes (list of strings): list of genotypes
             file_path (String): location where data will be saved
-            seed (int): seed for RNG
             edges (set of Strings): set of edges to choose from
         """
         self._fits = fits
         self._genotypes = genotypes
         self._file_path = file_path
         self._size = len(self._fits)
-        self._seed = seed
         self._edges = edges
-        random.seed(self._seed)
         
     def collect_data(self):
         """

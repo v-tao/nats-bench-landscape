@@ -4,8 +4,9 @@ import random
 from modules.FitnessLandscapeAnalysis import FitnessLandscapeAnalysis
 
 df = pd.read_csv("nats_bench.csv")
-search_spaces = ["CIFAR100", "ImageNet"]
+search_spaces = ["CIFAR10", "CIFAR100", "ImageNet"]
 genotypes = list(df["ArchitectureString"].values)
+random.seed(0)
 for space in search_spaces:
     fits = df[f"{space}TestAccuracy200Epochs"]
     file_path = f"data/{space}"
