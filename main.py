@@ -1,12 +1,18 @@
 import pandas as pd
 import numpy as np
 import random
+from matplotlib import pyplot as plt
+from tqdm import tqdm
 from modules.FitnessLandscapeAnalysis import FitnessLandscapeAnalysis
 
 df = pd.read_csv("nats_bench.csv")
-FLA = FitnessLandscapeAnalysis(df["Cifar10TestAccuracy12Epochs"].values, list(df["ArchitectureString"].values))
+FLA = FitnessLandscapeAnalysis(df["CIFAR10TestAccuracy200Epochs"].values, list(df["ArchitectureString"].values))
 
-data = FLA.run_analysis()
+autocorrs = []
+for i in tqdm(range(10, 210, 10)):
+    autocorrs.append(FLA.autocorrelation(trials=150, walk_len=i))
 
-df2 = pd.DataFrame([data])
-df2.to_csv("fla_test.csv", index=False)
+plt.xlabel("Walk Length (150 Trial)")
+plt.ylabel("Autocorrelation")
+plt.plot(range(10, 210, 10), autocorrs)
+plt.savefig("autocorrs_walk_len.png")
