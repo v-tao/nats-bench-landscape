@@ -65,6 +65,12 @@ class FitnessLandscapeAnalysis:
         """
         maxima = self.local_maxima(save=True)
         weak_basins = self.weak_basins(maxima, save=True)
+        # weak_basins = dict()
+        # for filename in os.listdir(f"{self._file_path}/weak_basins"):
+        #     path = os.path.join(f"{self._file_path}/weak_basins", filename)
+        #     if os.path.isfile(path):
+        #         with open(path, newline="") as f:
+        #             weak_basins[int(filename[10:-15])] = set(next(csv.reader(f)))
         self.strong_basins(weak_basins, save=True)
         self.neutral_nets(save=True)
         self.random_walks(save=True)
@@ -278,13 +284,13 @@ class FitnessLandscapeAnalysis:
             walk_len (int, default 100): walk length
             save (boolean, default True): determines whether or not to save the random walk data
         """
-        walks = np.empty((200, 100))
+        walks = np.empty((200, 100), dtype=int)
         for i in tqdm(range(trials)):
             start_i = random.randint(0, self._size-1)
             walk = self.random_walk(start_i, walk_len)
             walks[i] = walk
         if save:
-            np.savetxt(f"{self._file_path}/{trials}_random_length_{walk_len}_walks.csv", walks, delimiter=",")
+            np.savetxt(f"{self._file_path}/{trials}_random_length_{walk_len}_walks.csv", walks, delimiter=",", fmt="%d")
         return walks
 
     def autocorrelation(self, lag=1, trials=200, walk_len=100, save=True):
@@ -356,10 +362,12 @@ class FitnessLandscapeAnalysis:
         """
         basins = dict()
         for max_i in tqdm(maxima):
-            basins[max_i] = self.weak_basin(max_i)
+            basin = self.weak_basin(max_i)
+            basins[max_i] = basin
             if save:
                 os.makedirs(f"{self._file_path}/weak_basins", exist_ok=True)
-                np.savetxt(f"{self._file_path}/weak_basins/local_max_{max_i}_weak_basin", basins[max_i], delimiter=",")
+                with open(f"{self._file_path}/weak_basins/local_max_{max_i}_weak_basin.csv", "w", newline="") as f:
+                    csv.writer(f).writerow(list(basin))
         return basins
 
     def strong_basins(self, weak_basins_dict, save=True):
@@ -387,5 +395,6 @@ class FitnessLandscapeAnalysis:
             strong_basins_dict[opt] = strong_basin
             if save:
                 os.makedirs(f"{self._file_path}/strong_basins", exist_ok=True)
-                np.savetxt(f"{self._file_path}/strong_basins/local_max_{opt}_strong_basin", strong_basin, delimiter=",")
+                with open(f"{self._file_path}/strong_basins/local_max_{opt}_strong_basin.csv", "w", newline="") as f:
+                    csv.writer(f).writerow(list(strong_basin))
         return strong_basins_dict
