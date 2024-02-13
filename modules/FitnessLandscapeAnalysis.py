@@ -13,6 +13,8 @@ class FitnessLandscapeAnalysis:
     Attributes:
         _fits (np.ndarray): array of fitnesses
         _genotypes (list of strings): list of genotypes
+        _file_path (String): location where data will be saved
+        edges (set of Strings): set of edges to choose from
     
     Methods:
         run_analysis(): runs general analysis of fitness landscape
@@ -29,17 +31,19 @@ class FitnessLandscapeAnalysis:
         strong_baisns(weak_basins_dict): returns all the strong basins (architectures who have a strictly increasing path uniquely to one target architecture)
     """
 
-    def __init__(self, fits, genotypes, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
+    def __init__(self, fits, genotypes, file_path, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
         """
         Initialize a new instance of FitnessLandscapeAnalysis
 
         Parameters:
             fits (numpy.ndarray): array of fitnesses
             genotypes (list of strings): list of genotypes
+            file_path (String): location where data will be saved
             edges (set of Strings): set of edges to choose from
         """
         self._fits = fits
         self._genotypes = genotypes
+        self._file_path = file_path
         self._size = len(self._fits)
         self._edges = edges
 
@@ -57,7 +61,7 @@ class FitnessLandscapeAnalysis:
         autocorrelation = self.autocorrelation(trials=10, walk_len=10)
         weak_basins = self.weak_basins()
         strong_basins = self.strong_basins(weak_basins)
-        return {
+        summary = {
             "FDC": FDC,
             "NumLocalMaxima": len(local_maxima),
             "Modality": len(local_maxima)/self._size,
@@ -65,7 +69,6 @@ class FitnessLandscapeAnalysis:
             "NumWeakBasins": len(weak_basins),
             "NumStrongBasins": len(strong_basins)
         }
-
     def FDC(self):
         """
         Returns the fitness distance correlation (FDC) of the search space with the global maximum as the reference point
@@ -236,7 +239,7 @@ class FitnessLandscapeAnalysis:
             curr_i = rand_nbr_i
         return walk
 
-    def autocorrelation(self, lag=1, trials=200, walk_len=100):
+    def autocorrelation(self, lag=1, trials=200, walk_len=100, save=True, file_path=self._file_path):
         """
         Estimates the autocorrelation for the population given a certain lag.
 
@@ -244,17 +247,27 @@ class FitnessLandscapeAnalysis:
             lag (int, default 1): lag used to compute autocorrelation
             trials (int, default 200): number of samples to take
             walk_len (int, default 100): walk length
+            save (boolean, deafult True): determines whether or not to save the autocorrelation walk data
+            file_path (String, default self._file_path): location where autocorrelation data will be saved
         
         Returns:
             (float): estimate of autocorrelation
         """
         autocorrs = np.empty(trials)
+        history = np.empty((200, 100))
         # get the autocorrelation for many random walks
         for i in tqdm(range(trials)):
             start_i= random.randint(0, self._size-1)
             walk = self.random_walk(start_i, walk_len)
             walk_fits = [self._fits[i] for i in walk]
             autocorrs[i] = np.corrcoef(walk_fits[:-lag], walk_fits[lag:])[0, 1]
+            history[i] = walk
+
+        if save:
+            # save the walk history for each autocorrelation, and save each autocorrelation
+            np.savetxt(f"{file_path}/autocorrelation_walk_history.csv", history, delimiter=",")
+            np.savetxt(f"{file_path}/autocorrelations.csv", autocorrs, delimiter=",")
+        
         return np.average(autocorrs)
 
     def weak_basin(self, start_i):
