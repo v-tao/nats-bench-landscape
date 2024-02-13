@@ -3,6 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 from collections import deque
 import random
+import os
 from modules import util
 from config.Edge import Edge
 
@@ -239,7 +240,7 @@ class FitnessLandscapeAnalysis:
             curr_i = rand_nbr_i
         return walk
 
-    def autocorrelation(self, lag=1, trials=200, walk_len=100, save=True, file_path=self._file_path):
+    def autocorrelation(self, lag=1, trials=200, walk_len=100, save=True):
         """
         Estimates the autocorrelation for the population given a certain lag.
 
@@ -248,7 +249,6 @@ class FitnessLandscapeAnalysis:
             trials (int, default 200): number of samples to take
             walk_len (int, default 100): walk length
             save (boolean, deafult True): determines whether or not to save the autocorrelation walk data
-            file_path (String, default self._file_path): location where autocorrelation data will be saved
         
         Returns:
             (float): estimate of autocorrelation
@@ -265,8 +265,9 @@ class FitnessLandscapeAnalysis:
 
         if save:
             # save the walk history for each autocorrelation, and save each autocorrelation
-            np.savetxt(f"{file_path}/autocorrelation_walk_history.csv", history, delimiter=",")
-            np.savetxt(f"{file_path}/autocorrelations.csv", autocorrs, delimiter=",")
+            os.makedirs(f"{self._file_path}/autocorrelation", exists_ok=True)
+            np.savetxt(f"{self._file_path}/autocorrelation/autocorrelation_walk_history.csv", history, delimiter=",")
+            np.savetxt(f"{self._file_path}/autocorrelation/autocorrelations.csv", autocorrs, delimiter=",")
         
         return np.average(autocorrs)
 
@@ -295,12 +296,12 @@ class FitnessLandscapeAnalysis:
                     q.append(nbr_i)
         return basin
 
-    def weak_basins(self):
+    def weak_basins(self, save=True):
         """
         Returns all the weak basins of the search space, that is the weak basins of all optima
 
         Parameters:
-            none
+            save (boolean, deafult True): determines whether or not to save the autocorrelation walk data
         
         Returns:
             (dict): dictionary of weak basins where the key is the index of a local max and the value is the corresponding weak basin
@@ -309,14 +310,18 @@ class FitnessLandscapeAnalysis:
         basins = dict()
         for max_i in tqdm(maxima):
             basins[max_i] = self.weak_basin(max_i)
+            if save:
+                os.makedirs(f"{self._file_path}/weak_basins", exists_ok=True)
+                np.savetxt(f"{self._file_path}/weak_basins/local_max_{i}_weak_basin", basins[max_i], delimiter=",")
         return basins
 
-    def strong_basins(self, weak_basins_dict):
+    def strong_basins(self, weak_basins_dict, save=True):
         """
         Finds the strong basins corresponding to the weak basins. A strong basin contains only points that belong to one weak basin
 
         Parameters:
-            none
+            weak_basins_dict (dict): dictionary of weak basins
+            save (boolean, deafult True): determines whether or not to save the autocorrelation walk data
 
         Returns:
             (dict): dictionary of strong basins where the key is the index of a local max and the value is the corresponding strong basin
@@ -330,6 +335,10 @@ class FitnessLandscapeAnalysis:
                 if basin1 != basin2:
                     not_unique.update(basin1 & basin2)
         strong_basins_dict = dict()
-        for k in weak_basins_dict.keys():
-            strong_basins_dict[k] = weak_basins_dict[k] - not_unique
+        for opt in weak_basins_dict.keys():
+            strong_basin = weak_basins_dict[opt] - not_unique
+            strong_basins_dict[opt] = strong_basin
+            if save:
+                os.makedirs(f"{self._file_path}/strong_basins", exists_ok=True)
+                np.savetxt(f"{self._file_path}/strong_basins/local_max_{opt}_strong_basin", strong_basin, delimiter=",")
         return strong_basins_dict
