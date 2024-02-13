@@ -4,9 +4,10 @@ import random
 from modules.FitnessLandscapeAnalysis import FitnessLandscapeAnalysis
 
 df = pd.read_csv("nats_bench.csv")
-FLA = FitnessLandscapeAnalysis(df["Cifar10TestAccuracy12Epochs"].values, list(df["ArchitectureString"].values))
-
-data = FLA.run_analysis()
-
-df2 = pd.DataFrame([data])
-df2.to_csv("fla_test.csv", index=False)
+search_spaces = ["CIFAR100", "ImageNet"]
+genotypes = list(df["ArchitectureString"].values)
+for space in search_spaces:
+    fits = df[f"{space}TestAccuracy200Epochs"]
+    file_path = f"data/{space}"
+    FLA = FitnessLandscapeAnalysis(fits, genotypes, file_path)
+    FLA.collect_data()
