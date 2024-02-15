@@ -1,0 +1,28 @@
+{
+    "FDC": [
+        -0.3089504696796836,
+        0.0
+    ],
+    "spearmanr": [
+        -0.4666351601470174,
+        0.0
+    ],
+    "kendalltau": [
+        -0.36301801704439235,
+        0.0
+    ],
+    "numLocalMaxima": 24,
+    "modality": 0.001536,
+    "numWeakBasins": 24,
+    "avgWeakBasinSize": 13245.083333333334,
+    "weakBasinExtent": 0.998464,
+    "globalMaxWeakBasinExtent": 0.997248,
+    "numStrongBasins": 8,
+    "avgStrongBasinSize": 7.875,
+    "strongBasinExtent": 0.004032,
+    "globalMaxStrongBasinExtent": 0.003264,
+    "numNeutralNets": 35,
+    "avgNeutralNetSize": 7.457142857142857,
+    "maxNeutralNetSize": 63,
+    "correlationLength": 1.7540055550360132
+}
