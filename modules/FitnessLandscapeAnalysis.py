@@ -5,6 +5,7 @@ from collections import deque
 import random
 import os
 import csv
+from scipy import stats
 from modules import util
 from config.Edge import Edge
 
@@ -21,7 +22,7 @@ class FitnessLandscapeAnalysis:
     Methods:
         collect_data(): saves data for local maxima, weak and strong basins, autocorrelation run history, and neutral networks
         run_analysis(): runs general analysis of fitness landscape
-        FDC(): calculates the fitness distance correlation to the global maximum
+        correlations(): returns the fitness vs. distance  correlations of the search space with the global maximum as the reference point
         neutral_net_bfs(start_i): uses BFS to obtain the neutral network around the given starting architecture
         neutral_nets(): returns a list of neutral networks
         percolation_index(net): returns the percolation index (number of unique fitness values surrounding the neutral network) of a neutral network
@@ -93,19 +94,27 @@ class FitnessLandscapeAnalysis:
             "NumWeakBasins": len(weak_basins),
             "NumStrongBasins": len(strong_basins)
         }
-    def FDC(self):
+
+    def correlations(self):
         """
-        Returns the fitness distance correlation (FDC) of the search space with the global maximum as the reference point
+        Returns the fitness vs. distance  correlations of the search space with the global maximum as the reference point
 
         Parameters:
             none
 
         Returns:
-            (float): FDC of the search space
+            (dict): dictionary of different correlation values
         """
         # distances are to the fittest architecture
         dists = util.dists_to_arch(self._genotypes, np.argmax(self._fits))
-        return np.corrcoef(self._fits, dists)[0, 1]
+        FDC = stats.pearsonr(self._fits, dists) # same as Pearson's correlation
+        spearman = stats.spearmanr(self._fits, dists)
+        kendall = stats.kendallr(self._fits, dists)
+        return {
+            "FDC": FDC,
+            "spearman": spearman,
+            "kendall": kendall
+        }
 
     def neutral_net_bfs(self, start_i):
         """
