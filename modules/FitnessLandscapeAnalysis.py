@@ -7,6 +7,7 @@ import os
 import csv
 import json
 from scipy import stats
+from matplotlib import pyplot as plt
 from modules import util
 from config.Edge import Edge
 
@@ -181,6 +182,65 @@ class FitnessLandscapeAnalysis:
 
         with open(f"{analysis_loc}/autocorrelations.json", "w") as autocorrs_f:
             json.dump(autocorrs, autocorrs_f)
+    
+    def generate_visualizations(self, analysis_loc, vis_loc):
+        # ========== FITNESS ==========
+        plt.figure()
+        plt.hist(self._fits, bins=100)
+        plt.xlim(left=0, right=100)
+        plt.ylim(bottom=0, top=3500)
+
+        # Labels
+        plt.xlabel("Test Accuracy")
+        plt.ylabel("Number of Architectures")
+
+        plt.savefig(f"{vis_loc}/fitnesses.png")
+
+        # ========== FITNESS/DISTANCE CORRELATION ==========
+        dists = util.dists_to_arch(self._genotypes, self._global_max)
+        plt.figure()
+        plt.scatter(dists, self._fits, edgecolor="black", alpha=0.05)
+
+        # Labels
+        plt.xlabel("Distance to Global Maximum")
+        plt.ylabel("Fitness")
+        
+        plt.savefig(f"{vis_loc}/fits_dists.png")
+
+        # ========== FITNESS/DISTANCE CORRELATION OPTIMA ONLY ==========
+        with open(f"{self._file_path}/local_maxima.csv") as local_max_f:
+            local_maxima = [int(i) for i in list(next(csv.reader(local_max_f)))]
+        plt.figure()
+        maxima_genotypes = [self._genotypes[i] for i in local_maxima]
+        maxima_dists = [util.edit_distance(genotype, self._genotypes[self._global_max]) for genotype in maxima_genotypes]
+        maxima_fits = [self._fits[i] for i in local_maxima]
+
+        plt.scatter(maxima_dists, maxima_fits)
+        
+        # Labels
+        plt.xlabel("Distance to Global Maximum")
+        plt.ylabel("Fitness")
+
+        plt.savefig(f"{vis_loc}/optima_fits_dists.png")
+
+        # =========== AUTOCORRELATION ==========
+        # Extract lags and corresponding autocorrelations
+        with open(f"{analysis_loc}/autocorrelations.json", "r") as autocorrs_f:
+            autocorrs_dict = json.load(autocorrs_f)
+        lags = autocorrs_dict.keys()
+        autocorrs = autocorrs_dict.values()
+
+        plt.figure()
+        plt.bar(lags, autocorrs)
+        plt.ylim(bottom=-0.1, top=0.7)
+        # Threshold between "difficult" and "straightforward"
+        plt.axhline(y=0.15, color='gray', linestyle='--', alpha=0.5)
+
+        # Labels
+        plt.xlabel("Lag")
+        plt.ylabel("Autocorrelation")
+
+        plt.savefig(f"{vis_loc}/autocorrelations.png")
 
     def correlations(self):
         """
@@ -193,7 +253,7 @@ class FitnessLandscapeAnalysis:
             (dict): dictionary of different correlation values
         """
         # distances are to the fittest architecture
-        dists = util.dists_to_arch(self._genotypes, np.argmax(self._fits))
+        dists = util.dists_to_arch(self._genotypes, self._global_max)
         FDC = stats.pearsonr(self._fits, dists) # same as Pearson's correlation
         spearman = stats.spearmanr(self._fits, dists)
         kendall = stats.kendalltau(self._fits, dists)
