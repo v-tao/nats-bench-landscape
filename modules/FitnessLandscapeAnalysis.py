@@ -5,6 +5,7 @@ from collections import deque
 import random
 import os
 import csv
+import json
 from scipy import stats
 from modules import util
 from config.Edge import Edge
@@ -47,6 +48,7 @@ class FitnessLandscapeAnalysis:
             edges (set of Strings): set of edges to choose from
         """
         self._fits = fits
+        self._global_max = np.argmax(self._fits)
         self._genotypes = genotypes
         self._file_path = file_path
         self._size = len(self._fits)
@@ -72,28 +74,111 @@ class FitnessLandscapeAnalysis:
         self.neutral_nets(save=True)
         self.random_walks(save=True)
 
-    def run_analysis(self):
+    def run_analysis(self, analysis_loc):
         """
         Runs a fitness landscape analysis of the fitnesses and genotypes, and returns the corresponding object
         Parameters:
-            none
+            analysis_loc (String): file path to where the analysis should be saved
 
         Returns:
             (object) object containing metrics analysis
         """
-        FDC = self.FDC()
-        local_maxima = self.local_maxima()
-        autocorrelation = self.autocorrelation(trials=10, walk_len=10)
-        weak_basins = self.weak_basins()
-        strong_basins = self.strong_basins(weak_basins)
+        # ========== CORRELATIONS ==========
+        corrs = self.correlations()
+
+        # ========== LOCAL MAXIMA ==========
+        with open(f"{self._file_path}/local_maxima.csv") as local_max_f:
+            local_maxima = list(next(csv.reader(local_max_f)))
+
+        # ========== BASINS OF ATTRACTION ==========
+        # ---------- WEAK BASINS ----------
+        weak_basins = dict()
+        weak_basin_sizes = []
+        in_weak_basin = set()
+        for weak_basin_f_name in os.listdir(f"{self._file_path}/weak_basins"):
+            with open(f"{self._file_path}/weak_basins/{strong_basin_f_name}") as weak_basin_f:
+                local_max = weak_basin_f_name[10: -15]
+                weak_basin = list(next(csv.reader(weak_basin_f)))
+                # store weak basin in a dictionary corresponding to its optimum
+                weak_basins[local_max] = weak_basin
+                # keep track of weak basin sizes
+                weak_basin_sizes.append(len(weak_basin))
+                # keep track of which architectures appear in a weak basin
+                in_weak_basin.update(weak_basin)
+                if local_max == self._global_max:
+                    global_max_weak_basin_size = len(weak_basin)
+
+        # ---------- STRONG BASINS ----------
+        strong_basins = dict()
+        strong_basin_sizes = []
+        in_strong_basin = set()
+        for strong_basin_f_name in os.listdir(f"{self._file_path}/strong_basins"):
+            with open(f"{self._file_path}/strong_basins/{strong_basin_f_name}") as strong_basin_f:
+                local_max = strong_basin_f_name[10: -17]
+                strong_basin = list(next(csv.reader(strong_basin_f)))
+                # only count the basins that are not empty
+                if len(strong_basin) > 0:
+                    # store strong basin in a dictionary corresponding to its optimum
+                    strong_basins[local_max] = strong_basin
+                    # keep track of strong basin sizes
+                    strong_basin_sizes.append(len(strong_basin))
+                    # keep track of which architectures appear in a strong basin
+                    in_strong_basin.update(strong_basin)
+                    if local_max == self._global_max:
+                        global_max_strong_basin_size = len(strong_basin)
+
+        # ========== NEUTRALITY ==========
+        neutral_nets = []
+
+        # Open the CSV file and read its contents
+        with open(f"{self._file_path}/neutral_networks.csv", newline='') as neutral_nets_f:
+            for neutral_net in csv.reader(neutral_nets_f):
+                neutral_nets.append(neutral_net)
+    
+        # get the fitness of each neutral net, since the neutral nets all have the same fitness can just take first architecture
+        neutral_net_fits = [self._fits[net[0]] for net in neutral_nets]
+        neutral_net_sizes = [len(net) for net in neutral_nets]
+
+        # ========== RUGGEDNESS ==========
+        random_walks = []
+        autocorrs = dict()
+        with open(f"{self._file_path}/200_random_length_100_walks.csv", newline='') as random_walks_f:
+            for random_walk in csv.reader(random_walks_f):
+                random_walks.append(random_walk)
+        for lag in range(1, 21):
+            autocorrs_specific_lag = []
+            for random_walk in random_walks:
+                walk_fits = [self._fits[i] for i in walk]
+                autocorr_specific_walk = stats.pearsonr(walk_fits[:-lag], walk_fits[lag:])[0]
+                autocorrs_specific_lag.append(autocorr_specific_walk)
+            autocorrs[lag] = sum(autocorr_specific_lag)/len(autocorr_specific_lag)
+        
+
         summary = {
-            "FDC": FDC,
-            "NumLocalMaxima": len(local_maxima),
-            "Modality": len(local_maxima)/self._size,
-            "CorrelationLength": 1/autocorrelation,
-            "NumWeakBasins": len(weak_basins),
-            "NumStrongBasins": len(strong_basins)
+            "FDC": corrs["FDC"],
+            "spearmanr": corrs["spearmanr"],
+            "kendallr": corrs["kendallr"],
+            "numLocalMaxima": len(local_maxima),
+            "modality": len(local_maxima)/self._size,
+            "numWeakBasins": len(weak_basins),
+            "avgWeakBasinSize": sum(weak_basin_sizes)/len(weak_basins),
+            "weakBasinExtent": len(in_weak_basin)/self._size,
+            "globalMaxWeakBasinExtent": len(global_max_weak_basin_size)/self._size,
+            "numStrongBasins": len(strong_basins),
+            "avgStrongBasinSize": sum(strong_basin_sizes)/len(strong_basins),
+            "strongBasinExtent": len(in_strong_basin)/self._size,
+            "globalMaxStrongBasinExtent": len(global_max_strong_basin_size)/self._size,
+            "numNeutralNets": len(neutral_nets),
+            "avgNeutralNetSize": sum(neutral_net_sizes)/len(neutral_nets),
+            "maxNeutralNetSize": max(neutral_net_sizes),
+            "correlationLength": 1/autocorrs[1]
         }
+
+        with open(f"{analysis_loc}/summary.json", "w") as summary_f:
+            json.dump(summary, summary_f)
+
+        with open(f"{analysis_loc}/autocorrelations.json", "w") as autocorrs_f:
+            json.dump(autocorrs, autocorrs_f)
 
     def correlations(self):
         """
@@ -112,8 +197,8 @@ class FitnessLandscapeAnalysis:
         kendall = stats.kendallr(self._fits, dists)
         return {
             "FDC": FDC,
-            "spearman": spearman,
-            "kendall": kendall
+            "spearmanr": spearman,
+            "kendallr": kendall,
         }
 
     def neutral_net_bfs(self, start_i):
