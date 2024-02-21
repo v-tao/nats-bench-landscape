@@ -13,6 +13,18 @@
     ],
     "numLocalMaxima": 36,
     "modality": 0.002304,
+    "localMaximaPearsonr": [
+        -0.6171823058182369,
+        6.088378011229817e-05
+    ],
+    "localMaximaSpearmanr": [
+        -0.631056593024802,
+        3.6857498124023084e-05
+    ],
+    "localMaximaKendallTau": [
+        -0.5050056147875249,
+        6.574850023168299e-05
+    ],
     "numWeakBasins": 36,
     "avgWeakBasinSize": 14337.805555555555,
     "weakBasinExtent": 0.997696,

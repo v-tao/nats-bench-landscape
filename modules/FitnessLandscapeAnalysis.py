@@ -89,7 +89,10 @@ class FitnessLandscapeAnalysis:
 
         # ========== LOCAL MAXIMA ==========
         with open(f"{self._file_path}/local_maxima.csv") as local_max_f:
-            local_maxima = list(next(csv.reader(local_max_f)))
+            local_maxima = [int(i) for i in list(next(csv.reader(local_max_f)))]
+        maxima_genotypes = [self._genotypes[i] for i in local_maxima]
+        maxima_dists = [util.edit_distance(genotype, self._genotypes[self._global_max]) for genotype in maxima_genotypes]
+        maxima_fits = [self._fits[i] for i in local_maxima]
 
         # ========== BASINS OF ATTRACTION ==========
         # ---------- WEAK BASINS ----------
@@ -99,7 +102,7 @@ class FitnessLandscapeAnalysis:
         global_max_weak_basin_size = None
         for weak_basin_f_name in os.listdir(f"{self._file_path}/weak_basins"):
             with open(f"{self._file_path}/weak_basins/{weak_basin_f_name}") as weak_basin_f:
-                local_max = weak_basin_f_name[10: -15]
+                local_max = int(weak_basin_f_name[10: -15])
                 weak_basin = list(next(csv.reader(weak_basin_f)))
                 # store weak basin in a dictionary corresponding to its optimum
                 weak_basins[local_max] = weak_basin
@@ -107,7 +110,7 @@ class FitnessLandscapeAnalysis:
                 weak_basin_sizes.append(len(weak_basin))
                 # keep track of which architectures appear in a weak basin
                 in_weak_basin.update(weak_basin)
-                if int(local_max) == self._global_max:
+                if local_max == self._global_max:
                     global_max_weak_basin_size = len(weak_basin)
 
         # ---------- STRONG BASINS ----------
@@ -117,7 +120,7 @@ class FitnessLandscapeAnalysis:
         global_max_strong_basin_size = None
         for strong_basin_f_name in os.listdir(f"{self._file_path}/strong_basins"):
             with open(f"{self._file_path}/strong_basins/{strong_basin_f_name}") as strong_basin_f:
-                local_max = strong_basin_f_name[10: -17]
+                local_max = int(strong_basin_f_name[10: -17])
                 strong_basin = list(next(csv.reader(strong_basin_f)))
                 # only count the basins that are not empty
                 if len(strong_basin) > 0:
@@ -127,7 +130,7 @@ class FitnessLandscapeAnalysis:
                     strong_basin_sizes.append(len(strong_basin))
                     # keep track of which architectures appear in a strong basin
                     in_strong_basin.update(strong_basin)
-                    if int(local_max) == self._global_max:
+                    if local_max == self._global_max:
                         global_max_strong_basin_size = len(strong_basin)
 
         # ========== NEUTRALITY ==========
@@ -163,6 +166,9 @@ class FitnessLandscapeAnalysis:
             "kendalltau": corrs["kendalltau"],
             "numLocalMaxima": len(local_maxima),
             "modality": len(local_maxima)/self._size,
+            "localMaximaPearsonr": stats.pearsonr(maxima_dists, maxima_fits),
+            "localMaximaSpearmanr": stats.spearmanr(maxima_dists, maxima_fits),
+            "localMaximaKendallTau": stats.kendalltau(maxima_dists, maxima_fits),
             "numWeakBasins": len(weak_basins),
             "avgWeakBasinSize": sum(weak_basin_sizes)/len(weak_basins),
             "weakBasinExtent": len(in_weak_basin)/self._size,
