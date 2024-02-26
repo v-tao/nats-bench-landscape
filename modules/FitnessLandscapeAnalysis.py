@@ -32,7 +32,6 @@ class FitnessLandscapeAnalysis:
         local_maxima(): returns the indices of the local maxima
         random_walk(start_i, walk_len=100): generates a random walk along the landscape using one-edge adjustments
         random_walks(trials=200, walk_len=100, save=True): does many random walks
-        autocorrelation(lag=1, trials=200, walk_len=100): estimates the autocorrelation for the population
         weak_basin(start_i): returns the weak basin (architectures who have a strictly increasing path to the target architecture) around the given target architecture
         weak_basins(maxima, save=True): returns all the weak basins around all local maxima
         strong_baisns(weak_basins_dict): returns all the strong basins (architectures who have a strictly increasing path uniquely to one target architecture)
@@ -452,37 +451,6 @@ class FitnessLandscapeAnalysis:
         if save:
             np.savetxt(f"{self._file_path}/{trials}_random_length_{walk_len}_walks.csv", walks, delimiter=",", fmt="%d")
         return walks
-
-    def autocorrelation(self, lag=1, trials=200, walk_len=100, save=True):
-        """
-        Estimates the autocorrelation for the population given a certain lag.
-
-        Parameters:
-            lag (int, default 1): lag used to compute autocorrelation
-            trials (int, default 200): number of samples to take
-            walk_len (int, default 100): walk length
-            save (boolean, default True): determines whether or not to save the autocorrelation walk data
-        
-        Returns:
-            (float): estimate of autocorrelation
-        """
-        autocorrs = np.empty(trials)
-        history = np.empty((200, 100))
-        # get the autocorrelation for many random walks
-        for i in tqdm(range(trials)):
-            start_i= random.randint(0, self._size-1)
-            walk = self.random_walk(start_i, walk_len)
-            walk_fits = [self._fits[i] for i in walk]
-            autocorrs[i] = np.corrcoef(walk_fits[:-lag], walk_fits[lag:])[0, 1]
-            history[i] = walk
-
-        if save:
-            # save the walk history for each autocorrelation, and save each autocorrelation
-            os.makedirs(f"{self._file_path}/autocorrelation", exist_ok=True)
-            np.savetxt(f"{self._file_path}/autocorrelation/walk_history_lag_{lag}_trials_{trials}_walk_len_{walk_len}.csv", history, delimiter=",")
-            np.savetxt(f"{self._file_path}/autocorrelation/autocorrelations_lag_{lag}_trials_{trials}_walk_len_{walk_len}.csv", autocorrs, delimiter=",")
-        
-        return np.average(autocorrs)
 
     def weak_basin(self, start_i):
         """
