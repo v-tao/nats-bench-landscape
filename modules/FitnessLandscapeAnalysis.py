@@ -382,7 +382,7 @@ class FitnessLandscapeAnalysis:
         Returns a list of indices corresponding to local maxima in the search space
 
         Parameters:
-            save (boolean, deafult True): determines whether or not to save the autocorrelation walk data
+            save (boolean, deafult True): determines whether or not to save the local max data
         
         Returns:
             (list of ints): indices corresponding to local maxima in the search space
@@ -398,13 +398,15 @@ class FitnessLandscapeAnalysis:
                 visited.add(i)
                 # for each neighbor, check if fitness is less than current architecture
                 for nbr_i in nbrs:
-                    # if the neighbor is greater, then the current arch cannot be a local maximum
-                    if self._fits[nbr_i] > self._fits[i]:
+                    # if the neighbor is at least as fit as the current architecture,
+                    # the current architecture cannot be a local max
+                    if self._fits[nbr_i] >= self._fits[i]:
                         local_max = False
-                    # if the neighbor is smaller, then the neighbor cannot be a local maximum
-                    elif self._fits[nbr_i] < self._fits[i]:
+                    # if the neighbor is at most as fit as the current architecture,
+                    # the neighbor cannot be a local max
+                    elif self._fits[nbr_i] <= self._fits[i]:
                         visited.add(nbr_i)
-                # if all the neighbors are smaller, then the current architecture is a local maximum
+                # if all the neighbors are less fit, then the current architecture is a local maximum
                 if local_max:
                     maxima.append(i)
         if save:
