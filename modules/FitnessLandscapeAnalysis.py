@@ -63,14 +63,9 @@ class FitnessLandscapeAnalysis:
         Returns:
             none
         """
+        os.makedirs(f"{self._file_path}/data", exist_ok=True)
         maxima = self.local_maxima(save=True)
         weak_basins = self.weak_basins(maxima, save=True)
-        # weak_basins = dict()
-        # for filename in os.listdir(f"{self._file_path}/weak_basins"):
-        #     path = os.path.join(f"{self._file_path}/weak_basins", filename)
-        #     if os.path.isfile(path):
-        #         with open(path, newline="") as f:
-        #             weak_basins[int(filename[10:-15])] = set(next(csv.reader(f)))
         self.strong_basins(weak_basins, save=True)
         self.neutral_nets(save=True)
         self.random_walks(save=True)
@@ -190,6 +185,7 @@ class FitnessLandscapeAnalysis:
             json.dump(autocorrs, autocorrs_f)
     
     def generate_visualizations(self):
+        os.makedirs(f"{self._file_path}/vis", exist_ok=True)
         # ========== FITNESS ==========
         plt.figure()
         plt.hist(self._fits, bins=100)
@@ -214,7 +210,7 @@ class FitnessLandscapeAnalysis:
         plt.savefig(f"{self._file_path}/vis/fits_dists.png")
 
         # ========== FITNESS/DISTANCE CORRELATION OPTIMA ONLY ==========
-        with open(f"{self._file_path}/vis/local_maxima.csv") as local_max_f:
+        with open(f"{self._file_path}/data/local_maxima.csv") as local_max_f:
             local_maxima = [int(i) for i in list(next(csv.reader(local_max_f)))]
         plt.figure()
         maxima_genotypes = [self._genotypes[i] for i in local_maxima]
