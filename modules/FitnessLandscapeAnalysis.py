@@ -55,6 +55,15 @@ class FitnessLandscapeAnalysis:
         self._size = len(self._fits)
         self._edges = edges
         
+    def get_fits(self):
+        return self._fits
+    
+    def get_dists_to_global_max(self):
+        return util.dists_to_arch(self._genotypes, self._global_max)
+
+    def get_global_max(self):
+        return self._global_max
+
     def collect_data(self):
         """
         Saves data for local maxima, weak and strong basins, random walks, and neutral networks
