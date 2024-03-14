@@ -17,7 +17,8 @@ class FitnessLandscapeAnalysis:
 
     Attributes:
         _fits (np.ndarray): array of fitnesses
-        _genotypes (list of strings): list of genotypes
+        _genotypes (list of strings): list of genotypes (in our case, architecture strings)
+        _pheontypes (list of strings): list of phenotypes (in our case, unique architecture strings)
         _file_path (String): location where data will be saved
         _edges (set of Strings): set of edges to choose from
     
@@ -38,19 +39,21 @@ class FitnessLandscapeAnalysis:
         strong_baisns(weak_basins_dict): returns all the strong basins (architectures who have a strictly increasing path uniquely to one target architecture)
     """
 
-    def __init__(self, fits, genotypes, file_path, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
+    def __init__(self, fits, genotypes, phenotypes, file_path, edges={Edge.NONE, Edge.CONV_1X1, Edge.CONV_3X3, Edge.SKIP_CONNECT, Edge.AVG_POOL_3X3}):
         """
         Initialize a new instance of FitnessLandscapeAnalysis
 
         Parameters:
             fits (numpy.ndarray): array of fitnesses
-            genotypes (list of strings): list of genotypes
+            genotypes (list of strings): list of genotypes (in our case, architecture strings)
+            phenotypes (list of strings): list of phenotypes (in our case, unique architecture strings)
             file_path (String): location where data will be saved
             edges (set of Strings): set of edges to choose from
         """
         self._fits = fits
         self._global_max = np.argmax(self._fits)
         self._genotypes = genotypes
+        self._phenotypes = phenotypes
         self._file_path = file_path
         self._size = len(self._fits)
         self._edges = edges
@@ -142,12 +145,39 @@ class FitnessLandscapeAnalysis:
 
         # Open the CSV file and read its contents
         with open(f"{self._file_path}/data/neutral_networks.csv", newline='') as neutral_nets_f:
-            for neutral_net in csv.reader(neutral_nets_f):
+            for neutral_net_l in csv.reader(neutral_nets_f):
+                # reader will read strings, we want ints
+                neutral_net = [int(i) for i in neutral_net_l]
                 neutral_nets.append(neutral_net)
     
         # get the fitness of each neutral net, since the neutral nets all have the same fitness can just take first architecture
-        neutral_net_fits = [self._fits[int(net[0])] for net in neutral_nets]
         neutral_net_sizes = [len(net) for net in neutral_nets]
+
+        # ---------- LARGEST NEUTRAL NETWORK ----------
+        largest_neutral_net = neutral_nets[np.argmax(neutral_net_sizes)]
+        largest_neutral_net_unique_phenotypes = set()
+        largest_neutral_net_unique_nbr_genotypes = set()
+        largest_neutral_net_unique_nbr_phenotypes = set()
+        largest_neutral_net_unique_nbr_fits = set()
+        largest_neutral_net_edit_dists = []
+        for arch_i in largest_neutral_net:
+            largest_neutral_net_unique_phenotypes.add(self._phenotypes[arch_i])
+            # get all unique genotypes, phenotypes, and fitnesses of neighbors
+            for nbr_i in util.nbrs(self._genotypes, arch_i):
+                # do not add neighbors already in the neutral network
+                if nbr_i not in largest_neutral_net:
+                    largest_neutral_net_unique_nbr_genotypes.add(self._genotypes[nbr_i])
+                    largest_neutral_net_unique_nbr_phenotypes.add(self._phenotypes[nbr_i])
+                    largest_neutral_net_unique_nbr_fits.add(self._fits[nbr_i])
+        # get all the edit distances between members of neutral network
+        for i in range(len(largest_neutral_net)):
+            for j in range(i + 1, len(largest_neutral_net)):
+                arch_i_str = self._genotypes[i]
+                arch_j_str = self._genotypes[j]
+                largest_neutral_net_edit_dists.append(util.edit_distance(arch_i_str, arch_j_str))
+        largest_neutral_net_max_edit_distance = max(largest_neutral_net_edit_dists)
+        largest_neutral_net_avg_edit_distance = sum(largest_neutral_net_edit_dists) / len(largest_neutral_net_edit_dists)
+        largest_neutral_net_fit = self._fits[largest_neutral_net[0]]
 
         # ========== RUGGEDNESS ==========
         random_walks = []
@@ -184,6 +214,13 @@ class FitnessLandscapeAnalysis:
             "numNeutralNets": len(neutral_nets),
             "avgNeutralNetSize": sum(neutral_net_sizes)/len(neutral_nets),
             "maxNeutralNetSize": max(neutral_net_sizes),
+            "largestNeutralNetFitness": largest_neutral_net_fit,
+            "largestNeutralNetUniquePhenotypes": len(largest_neutral_net_unique_phenotypes),
+            "largestNeutralNetUniqueNeighborGenotypes": len(largest_neutral_net_unique_nbr_genotypes),
+            "largestNeutralNetUniqueNeighborPhenotypes": len(largest_neutral_net_unique_nbr_phenotypes),
+            "largestNeutralNetMaxEditDistance": largest_neutral_net_max_edit_distance,
+            "largestNeutralNetAvgEditDistance": largest_neutral_net_avg_edit_distance,
+            "largestNeutralNetPercolationIndex": len(largest_neutral_net_unique_nbr_fits),
             "correlationLength": 1/autocorrs[1]
         }
 
