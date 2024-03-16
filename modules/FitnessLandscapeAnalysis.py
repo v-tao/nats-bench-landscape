@@ -107,17 +107,13 @@ class FitnessLandscapeAnalysis:
         weak_basin_sizes = []
         in_weak_basin = set()
         global_max_weak_basin_size = None
-        for weak_basin_f_name in os.listdir(f"{self._file_path}/data/weak_basins"):
-            with open(f"{self._file_path}/data/weak_basins/{weak_basin_f_name}") as weak_basin_f:
-                local_max = int(weak_basin_f_name[10: -15])
+        for i in local_maxima:
+            with open(f"{self._file_path}/data/weak_basins/local_max_{i}_weak_basin.csv") as weak_basin_f:
                 weak_basin = list(next(csv.reader(weak_basin_f)))
-                # store weak basin in a dictionary corresponding to its optimum
-                weak_basins[local_max] = weak_basin
-                # keep track of weak basin sizes
+                weak_basins[i] = weak_basin
                 weak_basin_sizes.append(len(weak_basin))
-                # keep track of which architectures appear in a weak basin
                 in_weak_basin.update(weak_basin)
-                if local_max == self._global_max:
+                if i == self._global_max:
                     global_max_weak_basin_size = len(weak_basin)
 
         # ---------- STRONG BASINS ----------
@@ -178,7 +174,7 @@ class FitnessLandscapeAnalysis:
         largest_neutral_net_max_edit_distance = max(largest_neutral_net_edit_dists)
         largest_neutral_net_avg_edit_distance = sum(largest_neutral_net_edit_dists) / len(largest_neutral_net_edit_dists)
         largest_neutral_net_fit = self._fits[largest_neutral_net[0]]
-
+        
         # ========== RUGGEDNESS ==========
         random_walks = []
         autocorrs = dict()
@@ -206,6 +202,7 @@ class FitnessLandscapeAnalysis:
             "numWeakBasins": len(weak_basins),
             "avgWeakBasinSize": sum(weak_basin_sizes)/len(weak_basins),
             "weakBasinExtent": len(in_weak_basin)/self._size,
+            "fitnessWeakBasinSizePearsonr": stats.pearsonr(maxima_fits, weak_basin_sizes),
             "globalMaxWeakBasinExtent": global_max_weak_basin_size/self._size,
             "numStrongBasins": len(strong_basins),
             "avgStrongBasinSize": sum(strong_basin_sizes)/len(strong_basins),
