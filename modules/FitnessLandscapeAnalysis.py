@@ -91,6 +91,11 @@ class FitnessLandscapeAnalysis:
         Returns:
             (object) object containing metrics analysis
         """
+        # ========== DENSITY OF STATES ==========
+        max_fitness = self._fits[self._global_max]
+        fitness_diffs_from_max = np.array(self._fits) - max_fitness
+        avg_fitness_diff_from_max = np.average(fitness_diffs_from_max)
+
         # ========== CORRELATIONS ==========
         corrs = self.correlations()
 
@@ -191,6 +196,8 @@ class FitnessLandscapeAnalysis:
         
 
         summary = {
+            "maxFitness": max_fitness,
+            "avgFitnessDiffFromMax": avg_fitness_diff_from_max,
             "FDC": corrs["FDC"],
             "spearmanr": corrs["spearmanr"],
             "kendalltau": corrs["kendalltau"],
