@@ -225,7 +225,7 @@ class FitnessLandscapeAnalysis:
             "largestNeutralNetMaxEditDistance": largest_neutral_net_max_edit_distance,
             "largestNeutralNetAvgEditDistance": largest_neutral_net_avg_edit_distance,
             "largestNeutralNetPercolationIndex": len(largest_neutral_net_unique_nbr_fits),
-            "correlationLength": 1/autocorrs[1]
+            "correlationLength": -1/np.log(autocorrs[1])
         }
 
         with open(f"{self._file_path}/summary.json", "w") as summary_f:
