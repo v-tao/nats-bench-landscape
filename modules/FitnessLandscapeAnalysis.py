@@ -17,12 +17,17 @@ class FitnessLandscapeAnalysis:
 
     Attributes:
         _fits (np.ndarray): array of fitnesses
+        _global_max (int): index of fittest solution candidate
         _genotypes (list of strings): list of genotypes (in our case, architecture strings)
         _pheontypes (list of strings): list of phenotypes (in our case, unique architecture strings)
         _file_path (String): location where data will be saved
+        _size (int): number of solution candidates
         _edges (set of Strings): set of edges to choose from
     
     Methods:
+        get_fits(): returns the fitnesses of the fitness landscape
+        get_dists_to_global_max(): calculates and returns the distance of each architecture to the global optimum
+        get_global_max(): returns the index of the global optimum
         collect_data(): saves data for local maxima, weak and strong basins, autocorrelation run history, and neutral networks
         run_analysis(): runs general analysis of fitness landscape
         correlations(): returns the fitness vs. distance  correlations of the search space with the global maximum as the reference point
@@ -33,7 +38,6 @@ class FitnessLandscapeAnalysis:
         local_maxima(): returns the indices of the local maxima
         random_walk(start_i, walk_len=100): generates a random walk along the landscape using one-edge adjustments
         random_walks(trials=200, walk_len=100, save=True): does many random walks
-        autocorrelation(lag=1, trials=200, walk_len=100): estimates the autocorrelation for the population
         weak_basin(start_i): returns the weak basin (architectures who have a strictly increasing path to the target architecture) around the given target architecture
         weak_basins(maxima, save=True): returns all the weak basins around all local maxima
         strong_baisns(weak_basins_dict): returns all the strong basins (architectures who have a strictly increasing path uniquely to one target architecture)
@@ -59,12 +63,36 @@ class FitnessLandscapeAnalysis:
         self._edges = edges
         
     def get_fits(self):
+        """
+        Gets the fitnesses of the fitness landscape
+
+        Parameters:
+            none
+        Returns:
+            (numpy.ndarray): array of fitnesses
+        """
         return self._fits
     
     def get_dists_to_global_max(self):
+        """
+        Calculates and returns the distance of each architecture to the global optimum
+
+        Parameters:
+            none
+        Returns:
+            (numpy.ndarray): array of distances to the global optimum
+        """
         return util.dists_to_arch(self._genotypes, self._global_max)
 
     def get_global_max(self):
+        """
+        Returns the index of the global optimum
+
+        Parameters:
+            none
+        Returns:
+            (int) the index of the global optimum
+        """
         return self._global_max
 
     def collect_data(self):
@@ -234,65 +262,65 @@ class FitnessLandscapeAnalysis:
         with open(f"{self._file_path}/autocorrelations.json", "w") as autocorrs_f:
             json.dump(autocorrs, autocorrs_f)
     
-    def generate_visualizations(self):
-        os.makedirs(f"{self._file_path}/vis", exist_ok=True)
-        # ========== FITNESS ==========
-        plt.figure()
-        plt.hist(self._fits, bins=100)
-        plt.xlim(left=0, right=100)
-        plt.ylim(bottom=0, top=3500)
+    # def generate_visualizations(self):
+    #     os.makedirs(f"{self._file_path}/vis", exist_ok=True)
+    #     # ========== FITNESS ==========
+    #     plt.figure()
+    #     plt.hist(self._fits, bins=100)
+    #     plt.xlim(left=0, right=100)
+    #     plt.ylim(bottom=0, top=3500)
 
-        # Labels
-        plt.xlabel("Test Accuracy")
-        plt.ylabel("Number of Architectures")
+    #     # Labels
+    #     plt.xlabel("Test Accuracy")
+    #     plt.ylabel("Number of Architectures")
 
-        plt.savefig(f"{self._file_path}/vis/fitnesses.png")
+    #     plt.savefig(f"{self._file_path}/vis/fitnesses.png")
 
-        # ========== FITNESS/DISTANCE CORRELATION ==========
-        dists = util.dists_to_arch(self._genotypes, self._global_max)
-        plt.figure()
-        plt.scatter(dists, self._fits, edgecolor="black", alpha=0.05)
+    #     # ========== FITNESS/DISTANCE CORRELATION ==========
+    #     dists = util.dists_to_arch(self._genotypes, self._global_max)
+    #     plt.figure()
+    #     plt.scatter(dists, self._fits, edgecolor="black", alpha=0.05)
 
-        # Labels
-        plt.xlabel("Distance to Global Maximum")
-        plt.ylabel("Fitness")
+    #     # Labels
+    #     plt.xlabel("Distance to Global Maximum")
+    #     plt.ylabel("Fitness")
         
-        plt.savefig(f"{self._file_path}/vis/fits_dists.png")
+    #     plt.savefig(f"{self._file_path}/vis/fits_dists.png")
 
-        # ========== FITNESS/DISTANCE CORRELATION OPTIMA ONLY ==========
-        with open(f"{self._file_path}/data/local_maxima.csv") as local_max_f:
-            local_maxima = [int(i) for i in list(next(csv.reader(local_max_f)))]
-        plt.figure()
-        maxima_genotypes = [self._genotypes[i] for i in local_maxima]
-        maxima_dists = [util.edit_distance(genotype, self._genotypes[self._global_max]) for genotype in maxima_genotypes]
-        maxima_fits = [self._fits[i] for i in local_maxima]
+    #     # ========== FITNESS/DISTANCE CORRELATION OPTIMA ONLY ==========
+    #     with open(f"{self._file_path}/data/local_maxima.csv") as local_max_f:
+    #         local_maxima = [int(i) for i in list(next(csv.reader(local_max_f)))]
+    #     plt.figure()
+    #     maxima_genotypes = [self._genotypes[i] for i in local_maxima]
+    #     maxima_dists = [util.edit_distance(genotype, self._genotypes[self._global_max]) for genotype in maxima_genotypes]
+    #     maxima_fits = [self._fits[i] for i in local_maxima]
 
-        plt.scatter(maxima_dists, maxima_fits)
+    #     plt.scatter(maxima_dists, maxima_fits)
         
-        # Labels
-        plt.xlabel("Distance to Global Maximum")
-        plt.ylabel("Fitness")
+    #     # Labels
+    #     plt.xlabel("Distance to Global Maximum")
+    #     plt.ylabel("Fitness")
 
-        plt.savefig(f"{self._file_path}/vis/optima_fits_dists.png")
+    #     plt.savefig(f"{self._file_path}/vis/optima_fits_dists.png")
 
-        # =========== AUTOCORRELATION ==========
-        # Extract lags and corresponding autocorrelations
-        with open(f"{self._file_path}/autocorrelations.json", "r") as autocorrs_f:
-            autocorrs_dict = json.load(autocorrs_f)
-        lags = autocorrs_dict.keys()
-        autocorrs = autocorrs_dict.values()
+    #     # =========== AUTOCORRELATION ==========
+    #     # Extract lags and corresponding autocorrelations
+    #     with open(f"{self._file_path}/autocorrelations.json", "r") as autocorrs_f:
+    #         autocorrs_dict = json.load(autocorrs_f)
+    #     lags = autocorrs_dict.keys()
+    #     autocorrs = autocorrs_dict.values()
 
-        plt.figure()
-        plt.bar(lags, autocorrs)
-        plt.ylim(bottom=-0.1, top=0.7)
-        # Threshold between "difficult" and "straightforward"
-        plt.axhline(y=0.15, color='gray', linestyle='--', alpha=0.5)
+    #     plt.figure()
+    #     plt.bar(lags, autocorrs)
+    #     plt.ylim(bottom=-0.1, top=0.7)
+    #     # Threshold between "difficult" and "straightforward"
+    #     plt.axhline(y=0.15, color='gray', linestyle='--', alpha=0.5)
 
-        # Labels
-        plt.xlabel("Lag")
-        plt.ylabel("Autocorrelation")
+    #     # Labels
+    #     plt.xlabel("Lag")
+    #     plt.ylabel("Autocorrelation")
 
-        plt.savefig(f"{self._file_path}/vis/autocorrelations.png")
+    #     plt.savefig(f"{self._file_path}/vis/autocorrelations.png")
 
     def correlations(self):
         """
